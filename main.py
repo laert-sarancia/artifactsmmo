@@ -17,7 +17,8 @@ class Game(API):
     def __init__(self, name: str):
         super().__init__()
         self.name = name
-        self.items = {item["code"]: item for item in self.get_items(page=0)}
+        items = self.get_items(page=0)
+        self.items = {item["code"]: item for item in items}
         self.character = self.get_character()
 
     def __repr__(self):
@@ -238,30 +239,39 @@ class Game(API):
             item_type=None,
             page: int = 1
     ):
+        endpoint = "/items/"
+        params = {}
+        if craft_skill:
+            params.update({"craft_skill": craft_skill})
+        if max_level:
+            params.update({"max_level": max_level})
+        if min_lvl:
+            params.update({"min_lvl": min_lvl})
+        if item_type:
+            params.update({"item_type": item_type})
+        if page:
+            params.update({"craft_skill": page})
         result = []
-        if page != 0:
+        if params:
+            if page != 0:
+                response = self.get(
+                    endpoint=endpoint,
+                    params=params
+                )
+                return response
+            else:
+                for page in range(1, 5):
+                    result += self.get(
+                        endpoint=endpoint,
+                        params={**params,
+                                "page": page}
+                    )
+            return result
+        else:
             response = self.get(
-                endpoint="/items/",
-                params={
-                    "craft_skill": craft_skill,
-                    "max_level": max_level,
-                    "min_lvl": min_lvl,
-                    "type": item_type,
-                    "page": page}
+                endpoint=endpoint
             )
             return response
-        else:
-            for page in range(1,5):
-                result += self.get(
-                    endpoint="/items/",
-                    params={
-                        "craft_skill": craft_skill,
-                        "max_level": max_level,
-                        "min_lvl": min_lvl,
-                        "type": item_type,
-                        "page": page}
-                )
-            return result
 
     def get_maps(self, content: str):
         response = self.get(
@@ -281,7 +291,7 @@ class Game(API):
 
     async def gathering_items(self, code: str, quantity: int = 1):
         weapon = self.character.get("weapon_slot")
-        subtype = self.get_item(code).get("item").get("subtype")
+        subtype = self.items[code].get("subtype")
         if subtype == "mining":
             tool = "iron_pickaxe"
         elif subtype == "woodcutting":
@@ -326,8 +336,7 @@ class Game(API):
 
     async def craft_item_scenario(self, code: str, quantity: int = 1):
         if self.count_inventory_item(code) < quantity:
-            get_item = self.get_item(code)
-            craft = get_item.get("item").get("craft")
+            craft = self.items[code].get("craft")
             if craft:
                 skill, level, components, qty = craft.values()
                 for item in components:
@@ -357,7 +366,7 @@ class Game(API):
                     await self.move(1, 3)
                 await self.crafting(code, quantity)
             else:
-                if get_item.get("item").get("subtype") in ["woodcutting", "fishing", "mining"]:
+                if self.items[code].get("subtype") in ["woodcutting", "fishing", "mining"]:
                     await self.gathering_items(code, quantity)
                 else:
                     while self.count_inventory_item(code) < quantity:
@@ -389,7 +398,7 @@ class Game(API):
         bank_items = (item.get("code") for item in self.get_bank_items())
         weapons = {}
         for weapon in bank_items:
-            item = self.get_item(weapon).get("item", {})
+            item = self.items[weapon].get("item", {})
             if item.get("type") == "weapon" \
                     and item.get("level", 0) <= self.character.get("level"):
                 weapons[weapon] = item.get("effects", {})

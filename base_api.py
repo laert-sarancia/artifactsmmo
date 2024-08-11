@@ -27,7 +27,7 @@ class API:
             self.base_url + endpoint,
             headers=self.__headers,
             data=data,
-            params=json.dumps(params)
+            params=params
         )
         end = datetime.now()
         print(f"lag: {end-start}")
