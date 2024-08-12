@@ -20,7 +20,7 @@ class API:
             endpoint: str,
             data: dict | None = None,
             params: dict | None = None,
-    ):
+    ) -> dict | list:
         start = datetime.now()
         sleep(0.5)
         response = requests.get(
@@ -41,7 +41,7 @@ class API:
             endpoint: str,
             data: dict | None = None,
             params: dict | None = None
-    ):
+    ) -> dict | list:
         start = datetime.now()
         response = requests.post(
             self.base_url + endpoint,

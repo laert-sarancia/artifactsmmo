@@ -17,16 +17,16 @@ class Game(API):
     def __init__(self, name: str):
         super().__init__()
         self.name = name
-        items = self.get_items(page=0)
-        self.items = {item["code"]: item for item in items}
+        self.items = {item["code"]: item for item in self.get_items(page=0)}
+        self.monsters = {item["code"]: item for item in self.get_monsters()}
         self.character = self.get_character()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
 
     # ******* CHARACTER ACTIONS ****** #
     @wait
-    async def move(self, x: int, y: int):
+    async def move(self, x: int, y: int) -> dict | list:
         if self.character.get("x") != x or self.character.get("y") != y:
             response = self.post(
                 endpoint=f"/my/{self.name}/action/move",
@@ -36,14 +36,14 @@ class Game(API):
             return response
 
     @wait
-    async def gathering(self):
+    async def gathering(self) -> dict | list:
         response = self.post(f"/my/{self.name}/action/gathering")
         if response:
             self.character = response.get("character")
         return response
 
     @wait
-    async def crafting(self, code: str, quantity: int = 1):
+    async def crafting(self, code: str, quantity: int = 1) -> dict | list:
         response = self.post(
             endpoint=f"/my/{self.name}/action/crafting",
             data={"code": code, "quantity": quantity}
@@ -52,7 +52,7 @@ class Game(API):
         return response
 
     @wait
-    async def equip(self, code: str, slot: str):
+    async def equip(self, code: str, slot: str) -> dict | list:
         if self.character.get(f"{slot}_slot"):
             await self.unequip(slot)
         response = self.post(
@@ -63,7 +63,7 @@ class Game(API):
         return response
 
     @wait
-    async def unequip(self, slot: str):
+    async def unequip(self, slot: str) -> dict | list:
         response = self.post(
             endpoint=f"/my/{self.name}/action/unequip",
             data={"slot": slot}
@@ -72,7 +72,7 @@ class Game(API):
         return response
 
     @wait
-    async def sell(self, code: str, quantity: int = 1):
+    async def sell(self, code: str, quantity: int = 1) -> dict | list:
         await self.move(5, 1)
         price = self.get_item(code).get("ge").get("sell_price")
         response = self.post(
@@ -85,7 +85,7 @@ class Game(API):
         return response
 
     @wait
-    async def deposit_item(self, code: str, quantity: int = 1):
+    async def deposit_item(self, code: str, quantity: int = 1) -> dict | list:
         endpoint = f"/my/{self.name}/action/bank/deposit"
         await self.move(4, 1)
         if self.count_inventory_item(code):
@@ -105,7 +105,7 @@ class Game(API):
             return response
 
     @wait
-    async def withdraw_item(self, code: str, quantity: int = 1):
+    async def withdraw_item(self, code: str, quantity: int = 1) -> dict | list:
         endpoint = f"/my/{self.name}/action/bank/withdraw"
         bank = [it for it in self.get_bank_items(code) if it.get("code") == code]
         if bank:
@@ -128,12 +128,12 @@ class Game(API):
             print(f"No items {code} ({self.name})")
 
     @wait
-    async def recycling(self):
+    async def recycling(self) -> dict | list:
         response = self.post(endpoint=f"/my/{self.name}/action/recycling")
         return response
 
     @wait
-    async def fight(self, quantity: int = 1):
+    async def fight(self, quantity: int = 1) -> dict | list:
         for i in range(quantity):
             response = self.post(endpoint=f"/my/{self.name}/action/fight")
             self.character = response.get("character")
@@ -147,26 +147,26 @@ class Game(API):
             return response
 
     @wait
-    async def new_task(self):
+    async def new_task(self) -> dict | list:
         await self.move(1, 2)
         response = self.post(endpoint=f"/my/{self.name}/action/task/new")
         return response
 
     @wait
-    async def complete_task(self):
+    async def complete_task(self) -> dict | list:
         await self.move(1, 2)
         response = self.post(endpoint=f"/my/{self.name}/action/task/complete")
         return response
 
     @wait
-    async def task_exchange(self):
+    async def task_exchange(self) -> dict | list:
         await self.move(1, 2)
         if self.check_item_on("tasks_coin"):
             if self.count_inventory_item("tasks_coin") > 2:
                 response = self.post(endpoint=f"/my/{self.name}/action/task/exchange")
                 return response
 
-    def get_character(self):
+    def get_character(self) -> dict | list:
         response = self.get(endpoint=f"/characters/{self.name}")
         return response
 
@@ -177,18 +177,18 @@ class Game(API):
         else:
             print(f"No equip {code} on {self.name}")
 
-    def get_slot_of_item(self, code: str):
+    def get_slot_of_item(self, code: str) -> str:
         inventory = self.character.get("inventory")
         slot = [slot["slot"] for slot in inventory if slot["code"] == code]
         return slot[0]
 
-    def check_item_on(self, code: str):
+    def check_item_on(self, code: str) -> bool:
         inventory = self.character.get("inventory")
         if [slot for slot in inventory if slot["code"] == code]:
             return True
         return False
 
-    def count_inventory_item(self, code: str):
+    def count_inventory_item(self, code: str) -> int:
         inventory = self.character.get("inventory")
         if self.check_item_on(code):
             qty = [slot["quantity"] for slot in inventory if slot["code"] == code]
@@ -199,7 +199,7 @@ class Game(API):
 
     # ******* GAME ACTIONS ****** #
 
-    def get_bank_items(self, code=None):
+    def get_bank_items(self, code: str | None = None) -> dict | list:
         endpoint = "/my/bank/items"
         if code:
             response = self.get(
@@ -209,21 +209,26 @@ class Game(API):
             response = self.get(endpoint)
         return response
 
-    def get_monster(self, code) -> dict:
+    def get_monster(self, code: str) -> dict:
+        """
+        Deprecated
+        :param code:
+        :return: dictionary with monster info
+        """
         response = self.get(endpoint=f"/monsters/{code}")
         return response
 
-    def get_monsters(self, drop: str):
+    def get_monsters(self, drop: str | None = None) -> dict | list:
         response = self.get(
             endpoint="/monsters/",
             params={"drop": drop})
         return response
 
-    async def get_resources(self):
+    async def get_resources(self) -> dict | list:
         response = self.get(endpoint="/resources/")
         return response
 
-    def get_item(self, code: str):
+    def get_item(self, code: str) -> dict | list:
         response = self.get(endpoint=f"/items/{code}")
         data = response
         if data:
@@ -238,7 +243,7 @@ class Game(API):
             min_lvl: int = 0,
             item_type=None,
             page: int = 1
-    ):
+    ) -> dict | list:
         endpoint = "/items/"
         params = {}
         if craft_skill:
@@ -273,17 +278,17 @@ class Game(API):
             )
             return response
 
-    def get_maps(self, content: str):
+    def get_maps(self, content: str) -> dict | list:
         response = self.get(
             endpoint="/maps/",
             params={"content_code": content})
         return response
 
-    def get_map(self, x: int, y: int):
+    def get_map(self, x: int, y: int) -> dict | list:
         response = self.get(endpoint=f"/maps/{x}/{y}")
         return response
 
-    def get_monster_coord(self, name: str):
+    def get_monster_coord(self, name: str) -> dict | list:
         monsters = self.get_maps(name)
         return {"x": monsters[0].get("x"), "y": monsters[0].get("y")}
 
@@ -370,10 +375,10 @@ class Game(API):
                     await self.gathering_items(code, quantity)
                 else:
                     while self.count_inventory_item(code) < quantity:
-                        monsters = self.get_monsters(code)
+                        monsters = self.get_monsters(drop=code)
                         if monsters:
                             monster = monsters[0].get("code")
-                            await self.kill_monster(monster, )
+                            await self.kill_monster(monster)
                         else:
                             print(f"No monster here ({self.name})")
                             return
@@ -383,7 +388,7 @@ class Game(API):
         await self.new_task()
         await self.task_exchange()
 
-    async def change_items(self, code1, code2):
+    async def change_items(self, code1: str, code2: str):
         slot = self.get_slot_of_equip(code1)
         if slot and self.get_bank_items(code2):
             await self.withdraw_item(code2)
@@ -391,7 +396,7 @@ class Game(API):
             await self.deposit_item(code1)
 
     async def kill_monster(self, monster: str, quantity: int = 1):
-        monster_stats = self.get_monster(monster)
+        monster_stats = self.monsters[monster]
         monster_res = {key: value for key, value in monster_stats.items() if "res_" in key}
         min_res: str = min(monster_res, key=monster_res.get)
         el = min_res.replace("res_", "attack_")
@@ -434,17 +439,17 @@ class Game(API):
             await self.craft_item_scenario("cooked_gudgeon", quantity)
             await self.sell("cooked_gudgeon", quantity)
 
-    async def rise_jawel_level_5(self, quantity: int = 1):
+    async def rise_jewel_level_5(self, quantity: int = 1):
         while self.character.get("jewelrycrafting_level") < 5:
             await self.craft_item_scenario("copper_ring", quantity)
             await self.sell("copper_ring", quantity)
 
-    async def rise_jawel_level_10(self, quantity: int = 1):
+    async def rise_jewel_level_10(self, quantity: int = 1):
         while self.character.get("jewelrycrafting_level") < 10:
             await self.craft_item_scenario("life_amulet", quantity)
             await self.deposit_item("life_amulet", quantity)
 
-    async def rise_jawel_level_15(self, quantity: int = 1):
+    async def rise_jewel_level_15(self, quantity: int = 1):
         while self.character.get("jewelrycrafting_level") < 15:
             await self.craft_item_scenario("iron_ring", quantity)
             await self.sell("iron_ring", quantity)
@@ -551,7 +556,7 @@ class Game(API):
         await self.equip("feather_coat", "body_armor")
         await self.deposit_item("feather_coat", 2)
 
-        await self.rise_jawel_level_5()
+        await self.rise_jewel_level_5()
         await self.craft_item_scenario("life_amulet", 5)
         await self.equip("life_amulet", "amulet")
         await self.deposit_item("life_amulet", 4)
@@ -603,7 +608,7 @@ class Game(API):
         await self.sell("copper_helmet")
         await self.deposit_item("adventurer_helmet", 4)
 
-        await self.rise_jawel_level_10()
+        await self.rise_jewel_level_10()
         await self.craft_item_scenario("iron_ring", 10)
         await self.equip("iron_ring", "ring1")
         await self.equip("iron_ring", "ring2")
@@ -647,7 +652,7 @@ class Game(API):
     async def main_mode(self):  # Lert
         # await self.drop_all()
         await self.rise_gear_level_15(2)
-        await self.rise_jawel_level_15(2)
+        await self.rise_jewel_level_15(2)
 
     async def work_helper_mode0(self):  # Ralernan
         # await self.drop_all()
