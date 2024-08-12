@@ -128,8 +128,14 @@ class Game(API):
             print(f"No items {code} ({self.name})")
 
     @wait
-    async def recycling(self) -> dict | list:
-        response = self.post(endpoint=f"/my/{self.name}/action/recycling")
+    async def recycling(self, code: str, quantity: int = 1) -> dict | list:
+        response = self.post(
+            endpoint=f"/my/{self.name}/action/recycling",
+            data={
+                "code": code,
+                "quantity": quantity
+            }
+        )
         return response
 
     @wait
@@ -278,6 +284,10 @@ class Game(API):
             )
             return response
 
+    def get_exchange_items(self) -> dict | list:
+        response = self.get(endpoint="/ge/")
+        return response
+
     def get_maps(self, content: str) -> dict | list:
         response = self.get(
             endpoint="/maps/",
@@ -357,18 +367,7 @@ class Game(API):
                         await self.craft_item_scenario(
                             item_code,
                             item_quantity * quantity - self.count_inventory_item("code"))
-                if skill == "cooking":
-                    await self.move(1, 1)
-                elif skill == "mining":
-                    await self.move(1, 5)
-                elif skill == "weaponcrafting":
-                    await self.move(2, 1)
-                elif skill == "gearcrafting":
-                    await self.move(3, 1)
-                elif skill == "woodcutting":
-                    await self.move(-2, -3)
-                elif skill == "jewelrycrafting":
-                    await self.move(1, 3)
+                await self.move_to_craft(skill)
                 await self.crafting(code, quantity)
             else:
                 if self.items[code].get("subtype") in ["woodcutting", "fishing", "mining"]:
@@ -382,6 +381,20 @@ class Game(API):
                         else:
                             print(f"No monster here ({self.name})")
                             return
+
+    async def move_to_craft(self, skill):
+        if skill == "cooking":
+            await self.move(1, 1)
+        elif skill == "mining":
+            await self.move(1, 5)
+        elif skill == "weaponcrafting":
+            await self.move(2, 1)
+        elif skill == "gearcrafting":
+            await self.move(3, 1)
+        elif skill == "woodcutting":
+            await self.move(-2, -3)
+        elif skill == "jewelrycrafting":
+            await self.move(1, 3)
 
     async def task_circle(self):
         await self.complete_task()
@@ -400,14 +413,14 @@ class Game(API):
         monster_res = {key: value for key, value in monster_stats.items() if "res_" in key}
         min_res: str = min(monster_res, key=monster_res.get)
         el = min_res.replace("res_", "attack_")
-        bank_items = (item.get("code") for item in self.get_bank_items())
+        bank_items = [item.get("code") for item in self.get_bank_items()]
         weapons = {}
         for weapon in bank_items:
-            item = self.items[weapon].get("item", {})
+            item = self.items[weapon]
             if item.get("type") == "weapon" \
                     and item.get("level", 0) <= self.character.get("level"):
                 weapons[weapon] = item.get("effects", {})
-        best = (0, None)
+        best: tuple[int, str | None] = (0, None)
         for weapon, stats in weapons.items():
             for tp in stats:
                 if tp["name"] == el:
@@ -437,27 +450,27 @@ class Game(API):
     async def rise_fish_level_5(self, quantity: int = 1):
         while self.character.get("fishing_level") < 5:
             await self.craft_item_scenario("cooked_gudgeon", quantity)
-            await self.sell("cooked_gudgeon", quantity)
+            await self.drop_all()
 
     async def rise_jewel_level_5(self, quantity: int = 1):
         while self.character.get("jewelrycrafting_level") < 5:
             await self.craft_item_scenario("copper_ring", quantity)
-            await self.sell("copper_ring", quantity)
+            await self.drop_all()
 
     async def rise_jewel_level_10(self, quantity: int = 1):
         while self.character.get("jewelrycrafting_level") < 10:
             await self.craft_item_scenario("life_amulet", quantity)
-            await self.deposit_item("life_amulet", quantity)
+            await self.drop_all()
 
     async def rise_jewel_level_15(self, quantity: int = 1):
         while self.character.get("jewelrycrafting_level") < 15:
             await self.craft_item_scenario("iron_ring", quantity)
-            await self.sell("iron_ring", quantity)
+            await self.drop_all()
 
     async def rise_gear_level_5(self, quantity: int = 1):
         while self.character.get("gearcrafting_level") < 5:
             await self.craft_item_scenario("copper_boots", quantity)
-            await self.sell("copper_boots", quantity)
+            await self.drop_all()
 
     async def rise_gear_level_10(self, quantity: int = 1):
         item_list = [
@@ -468,7 +481,7 @@ class Game(API):
         while self.character.get("gearcrafting_level") < 10:
             for it in item_list:
                 await self.craft_item_scenario(it, quantity)
-                await self.deposit_item(it, quantity)
+            await self.drop_all()
 
     async def rise_gear_level_15(self, quantity: int = 1):
         item_list = [
@@ -480,7 +493,7 @@ class Game(API):
         while self.character.get("gearcrafting_level") < 15:
             for it in item_list:
                 await self.craft_item_scenario(it, quantity)
-                await self.deposit_item(it, quantity)
+                await self.drop_all()
 
     async def rise_weapon_level_5(self):
         item_list = [
@@ -490,7 +503,7 @@ class Game(API):
         while self.character.get("weaponcrafting_level") < 5:
             for it in item_list:
                 await self.craft_item_scenario(it, 5)
-                await self.deposit_item(it, 5)
+                await self.drop_all()
 
     async def rise_weapon_level_10(self, quantity: int = 1):
         item_list = [
@@ -502,7 +515,7 @@ class Game(API):
         while self.character.get("weaponcrafting_level") < 10:
             for it in item_list:
                 await self.craft_item_scenario(it, quantity)
-                await self.deposit_item(it, quantity)
+                await self.drop_all()
 
     async def rise_weapon_level_15(self, quantity: int = 1):
         item_list = [
@@ -512,54 +525,74 @@ class Game(API):
         while self.character.get("weaponcrafting_level") < 15:
             for it in item_list:
                 await self.craft_item_scenario(it, quantity)
-                await self.deposit_item(it, quantity)
+                await self.drop_all()
+
+    async def rise_weapon_level_20(self, quantity: int = 1):
+        item_list = [
+            "multislimes_sword",
+            "multislimes_sword",
+            "multislimes_sword",
+            "multislimes_sword",
+            "multislimes_sword",
+            "multislimes_sword",
+            "multislimes_sword",
+            "multislimes_sword",
+            "multislimes_sword",
+            "multislimes_sword",
+            "mushstaff",
+            "mushmush_bow",
+        ]
+        while self.character.get("weaponcrafting_level") < 20:
+            for it in item_list:
+                await self.craft_item_scenario(it, quantity)
+                await self.drop_all()
 
     async def rise_cook_level(self, level: int, quantity: int = 1):
         while self.character.get("weaponcrafting_level") < level:
             await self.craft_item_scenario("cooked_gudgeon", quantity)
-            await self.deposit_item("cooked_gudgeon", quantity)
+            await self.drop_all()
 
     async def level_5(self):
         await self.unequip("weapon")
         await self.craft_item_scenario("wooden_staff", 3)
         await self.equip("wooden_staff", "weapon")
-        await self.deposit_item("wooden_staff", 2)
+        await self.drop_all()
 
         await self.craft_item_scenario("copper_boots", 3)
         await self.equip("copper_boots", "boots")
-        await self.deposit_item("copper_boots", 2)
+        await self.drop_all()
 
         await self.craft_item_scenario("wooden_shield", 5)
         await self.equip("wooden_shield", "shield")
-        await self.deposit_item("wooden_shield", 4)
+        await self.drop_all()
 
         await self.craft_item_scenario("copper_helmet", 5)
         await self.equip("copper_helmet", "helmet")
-        await self.deposit_item("copper_helmet", 4)
+        await self.drop_all()
 
         await self.craft_item_scenario("copper_ring", 10)
         await self.equip("copper_ring", "ring1")
         await self.equip("copper_ring", "ring2")
-        await self.deposit_item("copper_ring", 8)
+        await self.drop_all()
 
         await self.rise_weapon_level_5()
 
         await self.rise_gear_level_5()
         await self.craft_item_scenario("copper_legs_armor", 5)
         await self.equip("copper_legs_armor", "leg_armor")
-        await self.deposit_item("copper_legs_armor", 4)
+        await self.drop_all()
 
         await self.craft_item_scenario("copper_armor", 3)
         await self.equip("copper_armor", "body_armor")
-        await self.deposit_item("copper_armor", 2)
+        await self.drop_all()
         await self.craft_item_scenario("feather_coat", 2)
         await self.equip("feather_coat", "body_armor")
-        await self.deposit_item("feather_coat", 2)
+        await self.drop_all()
 
         await self.rise_jewel_level_5()
         await self.craft_item_scenario("life_amulet", 5)
         await self.equip("life_amulet", "amulet")
-        await self.deposit_item("life_amulet", 4)
+        await self.drop_all()
 
         await self.do_task()
 
@@ -647,19 +680,30 @@ class Game(API):
                     for chrctr in range(5):
                         for item in items:
                             await self.craft_item_scenario(item)
-                            await self.deposit_item(item)
+                            await self.drop_all()
+                    for item in items:
+                        n = self.get_bank_items(item).get("quantity")
+                        if n > 34:
+                            await self.recycling_from_bank(item, n-5)
+
+    async def recycling_from_bank(self, code, quantity: int = 1):
+        await self.withdraw_item(code, quantity)
+        await self.move_to_craft(self.items[code].get("craft").get("skill"))
+        await self.recycling(code, quantity)
+        await self.drop_all()
 
     async def main_mode(self):  # Lert
-        # await self.drop_all()
-        await self.rise_gear_level_15(2)
-        await self.rise_jewel_level_15(2)
+        await self.drop_all()
+        await self.do_task()
+        await self.rise_weapon_level_20(2)
 
-    async def work_helper_mode0(self):  # Ralernan
+    async def work_helper_mode0(self):  # Ralernan (miner/metallurgist)
         # await self.drop_all()
         item_list = [
-            "ash_plank",
             "iron",
-            "ash_plank",
+            "iron",
+            "iron",
+            "iron",
             "iron",
             "cowhide",
             "red_slimeball",
@@ -672,7 +716,9 @@ class Game(API):
     async def work_helper_mode1(self):  # Kerry
         # await self.drop_all()
         item_list = [
-            "ash_plank",
+            "iron",
+            "iron",
+            "iron",
             "iron",
             "iron",
             "red_slimeball",
@@ -682,7 +728,7 @@ class Game(API):
                 await self.craft_item_scenario(i, 10)
                 await self.drop_all()
 
-    async def work_helper_mode2(self):  # Karven
+    async def work_helper_mode2(self):  # Karven (lamberjack/carpenter)
         # await self.drop_all()
         item_list = [
             "spruce_plank",
@@ -692,16 +738,19 @@ class Game(API):
             "spruce_plank",
         ]
         while True:
+
             for i in item_list:
                 await self.craft_item_scenario(i, 10)
                 await self.drop_all()
 
-    async def work_helper_mode3(self):  # Warrant
-        await self.drop_all()
+    async def work_helper_mode3(self):  # Warrant (miner/metallurgist/fisher/shef)
+        # await self.drop_all()
         item_list = [
-            "iron",
-            "iron",
-            "steel"
+            "coal",
+            "coal",
+            "coal",
+            "coal",
+            "steel",
             "cooked_shrimp",
             "beef_stew",
         ]

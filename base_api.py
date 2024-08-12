@@ -1,4 +1,6 @@
 import json
+import time
+
 import requests
 from time import sleep
 from datetime import datetime
@@ -20,7 +22,7 @@ class API:
             endpoint: str,
             data: dict | None = None,
             params: dict | None = None,
-    ) -> dict | list:
+    ) -> dict:
         start = datetime.now()
         sleep(0.5)
         response = requests.get(
@@ -32,7 +34,7 @@ class API:
         end = datetime.now()
         print(f"lag: {end-start}")
         if response.status_code == 404:
-            return []
+            return {}
         else:
             return response.json().get("data")
 
@@ -41,7 +43,7 @@ class API:
             endpoint: str,
             data: dict | None = None,
             params: dict | None = None
-    ) -> dict | list:
+    ) -> dict:
         start = datetime.now()
         response = requests.post(
             self.base_url + endpoint,
@@ -52,8 +54,9 @@ class API:
         end = datetime.now()
         print(f"lag: {end - start} [{endpoint}]")
         if response.status_code == 404:
-            return []
+            return {}
         elif response.status_code == 499:
+            time.sleep(10)
             response = requests.post(
                 self.base_url + endpoint,
                 headers=self.__headers,
