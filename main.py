@@ -527,21 +527,21 @@ class Game(API):
     async def crafter(self):
         await self.new_task()
         while True:
-            for level in range(0, 30, 5):
-                types = ["cooking",
-                         "weaponcrafting",
-                         "gearcrafting",
-                         "jewelrycrafting"]
-                for tp in types:
-                    items = self.get_items(min_lvl=level, max_level=level, item_type=tp)
-                    for chrctr in range(5):
-                        for item in items:
-                            await self.craft_item_scenario(item)
-                            await self.drop_all()
+            types = ["weaponcrafting",
+                     "gearcrafting",
+                     "jewelrycrafting"]
+            for tp in types:
+                current_lvl = self.character.get(f"{tp}_level")
+                level = current_lvl - (current_lvl % 5) + 5
+                items = CRAFT_ITEMS[tp][level]
+                for chrctr in range(5):
                     for item in items:
-                        n = self.get_bank_items(item).get("quantity")
-                        if n > 34:
-                            await self.recycling_from_bank(item, n - 5)
+                        await self.craft_item_scenario(item)
+                        await self.drop_all()
+                for item in items:
+                    n = self.get_bank_items(item).get("quantity")
+                    if n > 34:
+                        await self.recycling_from_bank(item, n - 5)
 
     async def main_mode(self):  # Lert
         # await self.drop_all()
