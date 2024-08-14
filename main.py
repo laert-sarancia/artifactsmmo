@@ -442,9 +442,7 @@ class Game(API):
 
     async def change_items(self, code: str):
         i_type = self.items[code].get("type")
-        slot = f'{i_type}_slot'
-        if i_type == "ring":
-            slot = f'{i_type}1_slot'  # TODO check 2nd ring
+        slot = f'{i_type}'
         current_item = self.character.get(slot)
         bank_items = [item.get("code") for item in self.get_bank_items()]
         my_items = [item.get("code") for item in self.character.get("inventory") if item.get("code")]
@@ -453,7 +451,7 @@ class Game(API):
             if not self.count_inventory_item(code):
                 await self.withdraw_item(code)
         await self.equip(code, slot)
-        await self.deposit_item(current_item)
+        await self.drop_all()
 
     async def kill_monster(self, monster: str, quantity: int = 1):
         monster_stats = self.monsters[monster]
@@ -487,10 +485,14 @@ class Game(API):
 
     async def do_task(self):
         if self.character.get("task_type") == "monsters":
-            await self.kill_monster(
-                self.character.get("task"),
-                self.character.get("task_total") - self.character.get("task_progress"))
-        await self.task_circle()
+            monster = self.character.get("task")
+            if self.monsters[monster].get("level") < self.character.get("level"):
+                await self.kill_monster(
+                    monster,
+                    self.character.get("task_total") - self.character.get("task_progress"))
+                await self.task_circle()
+            else:
+                print(f"Too hard Task {monster} ({self.name})")
 
     async def drop_all(self):
         inventory = self.character.get("inventory")
@@ -525,7 +527,8 @@ class Game(API):
                 await self.drop_all()
 
     async def crafter(self):
-        await self.new_task()
+        if not self.character.get("task"):
+            await self.new_task()
         while True:
             types = ["weaponcrafting",
                      "gearcrafting",
@@ -544,7 +547,7 @@ class Game(API):
                         await self.recycling_from_bank(item, n - 5)
 
     async def main_mode(self):  # Lert
-        # await self.drop_all()
+        await self.drop_all()
         await self.do_task()
         await self.rise_weapon_level_20(2)
 
@@ -566,7 +569,7 @@ class Game(API):
                 await self.drop_all()
 
     async def work_helper_mode1(self):  # Kerry
-        # await self.drop_all()
+        await self.drop_all()
         await self.do_task()
         item_list = [
             "iron",
@@ -582,8 +585,8 @@ class Game(API):
                 await self.drop_all()
 
     async def work_helper_mode2(self):  # Karven (lamberjack/carpenter)
-        # await self.drop_all()
-        await self.do_task()
+        await self.drop_all()
+        # await self.do_task()
         item_list = [
             "spruce_plank",
             "hardwood_plank",
@@ -598,12 +601,11 @@ class Game(API):
                 await self.drop_all()
 
     async def work_helper_mode3(self):  # Warrant (miner/metallurgist/fisher/shef)
-        # await self.drop_all()
-        await self.do_task()
+        await self.drop_all()
+        # await self.do_task()
         item_list = [
             "coal",
-            "coal",
-            "coal",
+            "cooked_shrimp",
             "coal",
             "steel",
             "cooked_shrimp",
