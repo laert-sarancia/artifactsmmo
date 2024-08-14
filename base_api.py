@@ -7,7 +7,40 @@ from datetime import datetime
 from dotenv import dotenv_values
 
 
-class API:
+class Base:
+
+    def get(
+            self,
+            endpoint: str,
+            data: dict | None = None,
+            params: dict | None = None,
+    ) -> dict:
+        """
+        Метод для получения данных
+        :param endpoint: путь до данных
+        :param data: фильтр для данных
+        :param params:
+        :return: словарь с результатами
+        """
+        pass
+
+    def post(
+            self,
+            endpoint: str,
+            data: dict | None = None,
+            params: dict | None = None
+    ) -> dict:
+        """
+        Метод для отправки данных
+        :param endpoint:
+        :param data:
+        :param params:
+        :return:
+        """
+        pass
+
+
+class API(Base):
     base_url = f"https://api.artifactsmmo.com"
     __config = dotenv_values("game.env")
     __token = __config["ARTIFACTS_TOKEN"]
@@ -32,7 +65,7 @@ class API:
             params=params
         )
         end = datetime.now()
-        print(f"lag: {end-start}")
+        print(f"lag: {end - start}")
         if response.status_code == 404:
             return {}
         else:
