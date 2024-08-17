@@ -5,17 +5,17 @@ CRAFT_ITEMS = {
     "cooking": {
         0: ["cooked_gudgeon"],
         5: ["cooked_gudgeon"],
-        10: ["cooked_shrimp"],
-        15: ["cooked_shrimp"],
-        20: ["cooked_trout"],
-        25: ["cooked_trout"],
-        30: ["cooked_trout"],
+        10: ["cooked_shrimp", "beef_stew", "mushroom_soup", "fried_eggs"],
+        15: ["cooked_shrimp", "cooked_wolf_meat", "fried_eggs"],
+        20: ["cooked_trout", "cheese", "cooked_wolf_meat"],
+        25: ["cooked_trout", "cooked_wolf_meat", "cheese"],
+        30: ["cooked_trout", "mushroom_soup", "beef_stew"],
     },
     "weaponcrafting": {
         0: ["copper_dagger", "wooden_staff"],
         5:  ["fire_staff", "sticky_dagger", "sticky_sword", "water_bow"],
         10: ["iron_dagger", "greater_wooden_staff"],
-        15: ["multislimes_sword", "mushstaff", "mushmush_bow", "multislimes_sword"],
+        15: ["mushmush_bow", "mushstaff", "multislimes_sword"],
         20: ["battlestaff", "steel_axe", "skull_staff", "forest_whip", ],
         25: ["skull_wand", "dreadful_staff"],
         30: ["gold_sword", "greater_dreadful_staff"],
@@ -76,14 +76,22 @@ class Game(API):
                 endpoint=f"/my/{self.name}/action/move",
                 data={"x": x, "y": y}
             )
-            self.character = response.get("character")
+            character = response.get("character")
+            if character:
+                self.character = character
+            else:
+                print(f"NO CHARACTER IN RESPONSE ({self.name})")
             return response
 
     @wait
     async def gathering(self) -> dict | list:
         response = self.post(f"/my/{self.name}/action/gathering")
         if response:
-            self.character = response.get("character")
+            character = response.get("character")
+            if character:
+                self.character = character
+            else:
+                print(f"NO CHARACTER IN RESPONSE ({self.name})")
         return response
 
     @wait
@@ -92,7 +100,11 @@ class Game(API):
             endpoint=f"/my/{self.name}/action/crafting",
             data={"code": code, "quantity": quantity}
         )
-        self.character = response.get("character")
+        character = response.get("character")
+        if character:
+            self.character = character
+        else:
+            print(f"NO CHARACTER IN RESPONSE ({self.name})")
         return response
 
     @wait
@@ -103,7 +115,11 @@ class Game(API):
             endpoint=f"/my/{self.name}/action/equip",
             data={"code": code, "slot": slot}
         )
-        self.character = response.get("character")
+        character = response.get("character")
+        if character:
+            self.character = character
+        else:
+            print(f"NO CHARACTER IN RESPONSE ({self.name})")
         return response
 
     @wait
@@ -112,7 +128,11 @@ class Game(API):
             endpoint=f"/my/{self.name}/action/unequip",
             data={"slot": slot}
         )
-        self.character = response.get("character")
+        character = response.get("character")
+        if character:
+            self.character = character
+        else:
+            print(f"NO CHARACTER IN RESPONSE ({self.name})")
         return response
 
     @wait
@@ -125,7 +145,11 @@ class Game(API):
                   "quantity": quantity,
                   "price": price}
         )
-        self.character = response.get("character")
+        character = response.get("character")
+        if character:
+            self.character = character
+        else:
+            print(f"NO CHARACTER IN RESPONSE ({self.name})")
         return response
 
     @wait
@@ -145,7 +169,11 @@ class Game(API):
                     data={"code": code,
                           "quantity": quantity}
                 )
-            self.character = response.get("character")
+            character = response.get("character")
+            if character:
+                self.character = character
+            else:
+                print(f"NO CHARACTER IN RESPONSE ({self.name})")
             return response
 
     @wait
@@ -166,10 +194,15 @@ class Game(API):
                     data={"code": code,
                           "quantity": quantity}
                 )
-            self.character = response.get("character")
+            character = response.get("character")
+            if character:
+                self.character = character
+            else:
+                print(f"NO CHARACTER IN RESPONSE ({self.name})")
             return response
         else:
             print(f"No items {code} ({self.name})")
+            return {}
 
     @wait
     async def recycling(self, code: str, quantity: int = 1) -> dict | list:
@@ -185,15 +218,23 @@ class Game(API):
     @wait
     async def fight(self) -> dict | list:
         response = self.post(endpoint=f"/my/{self.name}/action/fight")
-        self.character = response.get("character")
-        fight_result = response.get("fight")
-        if fight_result.get("result") == "lose":
-            print(f"Monster too strong for {self.name}")
+        if response:
+            character = response.get("character")
+            if character:
+                self.character = character
+            else:
+                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                return {}
+            fight_result = response.get("fight")
+            if fight_result.get("result") == "lose":
+                print(f"Monster too strong for {self.name}")
+                return {}
+            elif fight_result.get("drops"):
+                drops = [f'{item["quantity"]} {item["code"]}' for item in fight_result.get("drops")]
+                print(f'Won {", ".join(drops)} ({self.name})')
+            return response
+        else:
             return {}
-        elif fight_result.get("drops"):
-            drops = [f'{item["quantity"]} {item["code"]}' for item in fight_result.get("drops")]
-            print(f'Won {", ".join(drops)} ({self.name})')
-        return response
 
     @wait
     async def new_task(self) -> dict | list:
@@ -534,14 +575,16 @@ class Game(API):
                         await self.recycling_from_bank(item, n - 5)
 
     async def main_mode(self):  # Lert
-        await self.drop_all()
-        await self.recycling_from_bank("multislimes_sword", 4)
+        # await self.recycling_from_bank("multislimes_sword", 4)
+        # await self.recycling_from_bank("mushmush_bow", 5)
+        # await self.recycling_from_bank("mushstaff", 8)
+        # await self.drop_all()
         await self.crafter()
         # await self.do_task()
         # await self.rise_weapon_level_20(2)
 
     async def work_helper_mode0(self):  # Ralernan (miner/metallurgist)
-        # await self.drop_all()
+        await self.drop_all()
         # await self.do_task()
         item_list = [
             "iron",
@@ -559,7 +602,7 @@ class Game(API):
 
     async def work_helper_mode1(self):  # Kerry
         await self.drop_all()
-        # await self.do_task()
+        await self.do_task()
         item_list = [
             "iron",
             "iron",
