@@ -32,9 +32,9 @@ class Base:
     ) -> dict:
         """
         Метод для отправки данных
-        :param endpoint:
-        :param data:
-        :param params:
+        :param endpoint: путь до данных
+        :param data: передаваемые данные
+        :param params: передаваемые данные
         :return:
         """
         pass
@@ -65,7 +65,7 @@ class API(Base):
             params=params
         )
         end = datetime.now()
-        print(f"lag: {end - start}")
+        print(f"lag: {end - start} [{endpoint}]")
         if response.status_code == 404:
             return {}
         else:
