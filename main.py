@@ -494,7 +494,6 @@ class Player(API):
     async def task_circle(self):
         await self.complete_task()
         await self.new_task()
-        await self.task_exchange()
 
     async def change_items(self, code: str):
         i_type = self.game.items[code].get("type")
@@ -594,9 +593,9 @@ class Player(API):
                         await self.recycling_from_bank(item, n - 5)
 
     async def main_mode(self):  # Lert
-        await self.recycling_from_bank("multislimes_sword", 1)
-        await self.recycling_from_bank("mushmush_bow", 3)
-        await self.recycling_from_bank("mushstaff", 2)
+        # await self.recycling_from_bank("multislimes_sword", 1)
+        # await self.recycling_from_bank("mushmush_bow", 3)
+        # await self.recycling_from_bank("mushstaff", 2)
         await self.drop_all()
         await self.crafter()
 
