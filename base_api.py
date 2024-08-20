@@ -2,13 +2,20 @@ import json
 import time
 
 import requests
-from time import sleep
-from datetime import datetime
 from dotenv import dotenv_values
 
 
-class Base:
+def time_it(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"lag: {end_time - start_time:.2f} [{kwargs.get('endpoint')}]")
+        return result
+    return wrapper
 
+
+class Base:
     def get(
             self,
             endpoint: str,
@@ -50,42 +57,37 @@ class API(Base):
         "Authorization": f"Bearer {__token}"
     }
 
+    @time_it
     def get(
             self,
             endpoint: str,
             data: dict | None = None,
             params: dict | None = None,
     ) -> dict:
-        start = datetime.now()
-        sleep(0.5)
         response = requests.get(
             self.base_url + endpoint,
             headers=self.__headers,
             data=data,
             params=params
         )
-        end = datetime.now()
-        print(f"lag: {end - start} [{endpoint}]")
         if response.status_code == 404:
             return {}
         else:
             return response.json().get("data")
 
+    @time_it
     def post(
             self,
             endpoint: str,
             data: dict | None = None,
             params: dict | None = None
     ) -> dict:
-        start = datetime.now()
         response = requests.post(
             self.base_url + endpoint,
             headers=self.__headers,
             data=json.dumps(data),
             params=json.dumps(params)
         )
-        end = datetime.now()
-        print(f"lag: {end - start} [{endpoint}]")
         if response.status_code == 404:
             return {}
         elif response.status_code == 499:
@@ -98,3 +100,7 @@ class API(Base):
             )
         response.raise_for_status()
         return response.json().get("data")
+
+
+if __name__ == '__main__':
+    print("It's not executable file")
