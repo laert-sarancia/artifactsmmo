@@ -1,8 +1,9 @@
 import json
 import time
-
+import logging
 import requests
 from dotenv import dotenv_values
+logging.basicConfig(filename=f"logs/log_{time.time()}.log", level=logging.INFO)
 
 
 def time_it(func):
@@ -10,7 +11,8 @@ def time_it(func):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        print(f"lag: {end_time - start_time:.2f} [{kwargs.get('endpoint')}]")
+        logging.info(msg=f"lag: {end_time - start_time:.2f} {kwargs}")
+        print(f"lag: {end_time - start_time:.2f} {kwargs}")
         return result
     return wrapper
 
