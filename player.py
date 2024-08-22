@@ -53,6 +53,7 @@ def time_it(func):
         if lag:
             print(f"lag: {lag:.2f} {args}")
         return result
+
     return wrapper
 
 
@@ -63,6 +64,7 @@ def wait(func):
             cooldown = response.get("cooldown", {}).get("total_seconds", 0)
             await asyncio.sleep(cooldown)
         return response
+
     return wrapper
 
 
@@ -341,7 +343,15 @@ class Player(API):
                       "quantity": quantity}
             )
             character = response.get("character")
-            self.game.bank.items.update({code: quantity})
+
+            # Increase or add to bank
+            bank: list = self.game.get_bank_items(code)
+            if bank:
+                item = bank[0]
+                item["quantity"] += quantity
+            else:
+                self.game.bank.items.update({code: quantity})
+
             if character:
                 self.update_character(**character)
             else:
@@ -351,14 +361,15 @@ class Player(API):
     @wait
     async def withdraw_item(self, code: str, quantity: int = 1) -> dict | list:
         endpoint = f"/my/{self.name}/action/bank/withdraw"
-        bank = [it for it in self.game.get_bank_items(code) if it.get("code") == code]
+        bank: list = self.game.get_bank_items(code)
         if bank:
+            item = bank[0]
             await self.move(4, 1)
-            if bank[0].get("quantity") <= quantity:
+            if item["quantity"] <= quantity:
                 response = self.post(
                     endpoint=endpoint,
                     data={"code": code,
-                          "quantity": bank[0].get("quantity")}
+                          "quantity": item.get("quantity")}
                 )
             else:
                 response = self.post(
@@ -367,8 +378,12 @@ class Player(API):
                           "quantity": quantity}
                 )
             character = response.get("character")
+
             # Decrease or remove from bank
-            self.game.bank.items.popitem(code)
+            if item["quantity"] == quantity:
+                self.game.bank.items.popitem(code)
+            else:
+                item["quantity"] = item["quantity"] - quantity
 
             if character:
                 self.update_character(**character)
