@@ -163,9 +163,6 @@ class BasePlayer(API):
         self.inventory_max_items = inventory_max_items
         self.inventory = inventory
 
-    def __repr__(self) -> str:
-        return self.name
-
     def get_slots(self) -> dict:
         return {
             "weapon_slot": self.weapon_slot,

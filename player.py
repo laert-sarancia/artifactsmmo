@@ -1,5 +1,7 @@
 import asyncio
 import time
+from dataclasses import dataclass
+
 from base_player import BasePlayer
 
 CRAFT_ITEMS = {
@@ -67,6 +69,7 @@ def wait(func):
     return wrapper
 
 
+@dataclass
 class Player(BasePlayer):
     def __init__(self, game, name: str, skin: str, level: int, xp: int, max_xp: int, total_xp: int, gold: int,
                  speed: int, mining_level: int, mining_xp: int, mining_max_xp: int, woodcutting_level: int,
@@ -386,10 +389,7 @@ class Player(BasePlayer):
     async def main_mode(self):  # Lert
         await self.wait_before_action()
         await self.drop_all()
-        await self.do_task()
-        await self.craft_item_scenario("mushmush_jacket", 5)
-        await self.change_items("mushmush_jacket")
-        await self.drop_all()
+        # await self.do_task()
         await self.craft_item_scenario("adventurer_boots", 5)
         await self.change_items("adventurer_boots")
         await self.drop_all()
