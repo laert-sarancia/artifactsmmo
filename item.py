@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class Item:
     def __init__(
             self,
@@ -18,9 +22,6 @@ class Item:
         self.description = description
         self.effects = effects
         self.craft = craft
-
-    def __repr__(self):
-        return self.code
 
 
 if __name__ == '__main__':

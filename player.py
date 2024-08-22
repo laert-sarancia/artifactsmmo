@@ -1,7 +1,8 @@
 import asyncio
 import time
-from datetime import datetime
-from base_api import API
+from dataclasses import dataclass
+
+from base_player import BasePlayer
 
 CRAFT_ITEMS = {
     "cooking": {
@@ -68,82 +69,34 @@ def wait(func):
     return wrapper
 
 
-class Player(API):
-    def __init__(
-            self,
-            game,
-            name: str,
-            skin: str,
-            level: int,
-            xp: int,
-            max_xp: int,
-            total_xp: int,
-            gold: int,
-            speed: int,
-            mining_level: int,
-            mining_xp: int,
-            mining_max_xp: int,
-            woodcutting_level: int,
-            woodcutting_xp: int,
-            woodcutting_max_xp: int,
-            fishing_level: int,
-            fishing_xp: int,
-            fishing_max_xp: int,
-            weaponcrafting_level: int,
-            weaponcrafting_xp: int,
-            weaponcrafting_max_xp: int,
-            gearcrafting_level: int,
-            gearcrafting_xp: int,
-            gearcrafting_max_xp: int,
-            jewelrycrafting_level: int,
-            jewelrycrafting_xp: int,
-            jewelrycrafting_max_xp: int,
-            cooking_level: int,
-            cooking_xp: int,
-            cooking_max_xp: int,
-            hp: int,
-            haste: int,
-            critical_strike: int,
-            stamina: int,
-            attack_fire: int,
-            attack_earth: int,
-            attack_water: int,
-            attack_air: int,
-            dmg_fire: int,
-            dmg_earth: int,
-            dmg_water: int,
-            dmg_air: int,
-            res_fire: int,
-            res_earth: int,
-            res_water: int,
-            res_air: int,
-            x: int,
-            y: int,
-            cooldown: int,
-            cooldown_expiration: str,
-            weapon_slot: str,
-            shield_slot: str,
-            helmet_slot: str,
-            body_armor_slot: str,
-            leg_armor_slot: str,
-            boots_slot: str,
-            ring1_slot: str,
-            ring2_slot: str,
-            amulet_slot: str,
-            artifact1_slot: str,
-            artifact2_slot: str,
-            artifact3_slot: str,
-            consumable1_slot: str,
-            consumable1_slot_quantity: int,
-            consumable2_slot: str,
-            consumable2_slot_quantity: int,
-            task: str,
-            task_type: str,
-            task_progress: int,
-            task_total: int,
-            inventory_max_items: int,
-            inventory: list[dict]
-    ):
+@dataclass
+class Player(BasePlayer):
+    def __init__(self, game, name: str, skin: str, level: int, xp: int, max_xp: int, total_xp: int, gold: int,
+                 speed: int, mining_level: int, mining_xp: int, mining_max_xp: int, woodcutting_level: int,
+                 woodcutting_xp: int, woodcutting_max_xp: int, fishing_level: int, fishing_xp: int, fishing_max_xp: int,
+                 weaponcrafting_level: int, weaponcrafting_xp: int, weaponcrafting_max_xp: int, gearcrafting_level: int,
+                 gearcrafting_xp: int, gearcrafting_max_xp: int, jewelrycrafting_level: int, jewelrycrafting_xp: int,
+                 jewelrycrafting_max_xp: int, cooking_level: int, cooking_xp: int, cooking_max_xp: int, hp: int,
+                 haste: int, critical_strike: int, stamina: int, attack_fire: int, attack_earth: int, attack_water: int,
+                 attack_air: int, dmg_fire: int, dmg_earth: int, dmg_water: int, dmg_air: int, res_fire: int,
+                 res_earth: int, res_water: int, res_air: int, x: int, y: int, cooldown: int, cooldown_expiration: str,
+                 weapon_slot: str, shield_slot: str, helmet_slot: str, body_armor_slot: str, leg_armor_slot: str,
+                 boots_slot: str, ring1_slot: str, ring2_slot: str, amulet_slot: str, artifact1_slot: str,
+                 artifact2_slot: str, artifact3_slot: str, consumable1_slot: str, consumable1_slot_quantity: int,
+                 consumable2_slot: str, consumable2_slot_quantity: int, task: str, task_type: str, task_progress: int,
+                 task_total: int, inventory_max_items: int, inventory: list[dict]):
+        super().__init__(game, name, skin, level, xp, max_xp, total_xp, gold, speed, mining_level, mining_xp,
+                         mining_max_xp, woodcutting_level, woodcutting_xp, woodcutting_max_xp, fishing_level,
+                         fishing_xp, fishing_max_xp, weaponcrafting_level, weaponcrafting_xp, weaponcrafting_max_xp,
+                         gearcrafting_level, gearcrafting_xp, gearcrafting_max_xp, jewelrycrafting_level,
+                         jewelrycrafting_xp, jewelrycrafting_max_xp, cooking_level, cooking_xp, cooking_max_xp, hp,
+                         haste, critical_strike, stamina, attack_fire, attack_earth, attack_water, attack_air, dmg_fire,
+                         dmg_earth, dmg_water, dmg_air, res_fire, res_earth, res_water, res_air, x, y, cooldown,
+                         cooldown_expiration, weapon_slot, shield_slot, helmet_slot, body_armor_slot, leg_armor_slot,
+                         boots_slot, ring1_slot, ring2_slot, amulet_slot, artifact1_slot, artifact2_slot,
+                         artifact3_slot, consumable1_slot, consumable1_slot_quantity, consumable2_slot,
+                         consumable2_slot_quantity, task, task_type, task_progress, task_total, inventory_max_items,
+                         inventory)
         self.game = game
         self.name = name
         self.skin = skin
@@ -217,278 +170,7 @@ class Player(API):
         self.inventory_max_items = inventory_max_items
         self.inventory = inventory
 
-    def __repr__(self) -> str:
-        return self.name
-
-    def get_slots(self) -> dict:
-        return {
-            "weapon_slot": self.weapon_slot,
-            "shield_slot": self.shield_slot,
-            "helmet_slot": self.helmet_slot,
-            "body_armor_slot": self.body_armor_slot,
-            "leg_armor_slot": self.leg_armor_slot,
-            "boots_slot": self.boots_slot,
-            "ring1_slot": self.ring1_slot,
-            "ring2_slot": self.ring2_slot,
-            "amulet_slot": self.amulet_slot,
-            "artifact1_slot": self.artifact1_slot,
-            "artifact2_slot": self.artifact2_slot,
-            "artifact3_slot": self.artifact3_slot,
-        }
-
-    def update_character(self, **kwargs):
-        self.__dict__.update(**kwargs)
-
-    # ******* BASIC ACTIONS ****** #
-
-    async def wait_before_action(self):
-        now = datetime.strptime(self.game.get_status().get("server_time"), "%Y-%m-%dT%H:%M:%S.%fZ")
-        dt = datetime.strptime(self.cooldown_expiration, "%Y-%m-%dT%H:%M:%S.%fZ")
-        cd = (dt - now).total_seconds()
-        if cd > 0:
-            print(f"Waiting {cd:.2f} sec for {self.name}")
-            await asyncio.sleep(cd)
-
-    @wait
-    async def move(self, x: int, y: int) -> dict | list:
-        if self.x != x or self.y != y:
-            response = self.post(
-                endpoint=f"/my/{self.name}/action/move",
-                data={"x": x, "y": y}
-            )
-            character = response.get("character")
-            if character:
-                self.update_character(**character)
-            else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
-            return response
-
-    @wait
-    async def gathering(self) -> dict | list:
-        response = self.post(f"/my/{self.name}/action/gathering")
-        if response:
-            character = response.get("character")
-            if character:
-                self.update_character(**character)
-            else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
-        return response
-
-    @wait
-    async def crafting(self, code: str, quantity: int = 1) -> dict | list:
-        response = self.post(
-            endpoint=f"/my/{self.name}/action/crafting",
-            data={"code": code, "quantity": quantity}
-        )
-        character = response.get("character")
-        if character:
-            self.update_character(**character)
-        else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
-        return response
-
-    @wait
-    async def equip(self, code: str, slot: str) -> dict | list:
-        response = self.post(
-            endpoint=f"/my/{self.name}/action/equip",
-            data={"code": code, "slot": slot}
-        )
-        character = response.get("character")
-        if character:
-            self.update_character(**character)
-        else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
-        return response
-
-    @wait
-    async def unequip(self, slot: str) -> dict | list:
-        response = self.post(
-            endpoint=f"/my/{self.name}/action/unequip",
-            data={"slot": slot}
-        )
-        character = response.get("character")
-        if character:
-            self.update_character(**character)
-        else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
-        return response
-
-    @wait
-    async def sell(self, code: str, quantity: int = 1) -> dict | list:
-        await self.move(5, 1)
-        price = self.game.get_item(code).get("ge").get("sell_price")
-        response = self.post(
-            endpoint=f"/my/{self.name}/action/ge/sell",
-            data={"code": code,
-                  "quantity": quantity,
-                  "price": price}
-        )
-        character = response.get("character")
-        if character:
-            self.update_character(**character)
-        else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
-        return response
-
-    @wait
-    async def deposit_item(self, code: str, quantity: int = 1) -> dict | list:
-        endpoint = f"/my/{self.name}/action/bank/deposit"
-        await self.move(4, 1)
-        if self.count_inventory_item(code):
-            if self.count_inventory_item(code) < quantity:
-                quantity = self.count_inventory_item(code)
-            response = self.post(
-                endpoint=endpoint,
-                data={"code": code,
-                      "quantity": quantity}
-            )
-            character = response.get("character")
-
-            # Increase or add to bank
-            bank: list = self.game.get_bank_items(code)
-            if bank:
-                item = bank[0]
-                item["quantity"] += quantity
-            else:
-                self.game.bank.items.update({code: quantity})
-
-            if character:
-                self.update_character(**character)
-            else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
-            return response
-
-    @wait
-    async def withdraw_item(self, code: str, quantity: int = 1) -> dict | list:
-        endpoint = f"/my/{self.name}/action/bank/withdraw"
-        bank: list = self.game.get_bank_items(code)
-        if bank:
-            item = bank[0]
-            await self.move(4, 1)
-            if item["quantity"] <= quantity:
-                response = self.post(
-                    endpoint=endpoint,
-                    data={"code": code,
-                          "quantity": item.get("quantity")}
-                )
-            else:
-                response = self.post(
-                    endpoint=endpoint,
-                    data={"code": code,
-                          "quantity": quantity}
-                )
-            character = response.get("character")
-
-            # Decrease or remove from bank
-            if item["quantity"] == quantity:
-                self.game.bank.items.popitem(code)
-            else:
-                item["quantity"] = item["quantity"] - quantity
-
-            if character:
-                self.update_character(**character)
-            else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
-            return response
-        else:
-            print(f"No items {code} ({self.name})")
-            return {}
-
-    @wait
-    async def recycling(self, code: str, quantity: int = 1) -> dict | list:
-        response = self.post(
-            endpoint=f"/my/{self.name}/action/recycling",
-            data={
-                "code": code,
-                "quantity": quantity
-            }
-        )
-        character = response.get("character")
-        if character:
-            self.update_character(**character)
-        else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
-        return response
-
-    @wait
-    async def fight(self) -> dict | list:
-        response = self.post(endpoint=f"/my/{self.name}/action/fight")
-        if response:
-            character = response.get("character")
-            if character:
-                self.update_character(**character)
-            else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
-                return {}
-            fight_result = response.get("fight")
-            if fight_result.get("result") == "lose":
-                print(f"Monster too strong for {self.name}")
-                return {}
-            elif fight_result.get("drops"):
-                drops = [f'{item["quantity"]} {item["code"]}' for item in fight_result.get("drops")]
-                print(f'Won {", ".join(drops)} ({self.name})')
-            return response
-        else:
-            return {}
-
-    @wait
-    async def new_task(self) -> dict | list:
-        await self.move(1, 2)
-        response = self.post(endpoint=f"/my/{self.name}/action/task/new")
-        return response
-
-    @wait
-    async def complete_task(self) -> dict | list:
-        await self.move(1, 2)
-        response = self.post(endpoint=f"/my/{self.name}/action/task/complete")
-        return response
-
-    @wait
-    async def task_exchange(self) -> dict | list:
-        await self.move(1, 2)
-        if self.check_item_on("tasks_coin"):
-            if self.count_inventory_item("tasks_coin") > 2:
-                response = self.post(endpoint=f"/my/{self.name}/action/task/exchange")
-                character = response.get("character")
-                if character:
-                    self.update_character(**character)
-                else:
-                    print(f"NO CHARACTER IN RESPONSE ({self.name})")
-                return response
-
-    def get_character(self) -> dict | list:
-        response = self.get(endpoint=f"/characters/{self.name}")
-        return response
-
-    def get_slot_of_equip(self, code: str) -> str:
-        equip: list = [slot for slot in self.get_slots() if self.get_slots()[slot] == code]
-        if equip:
-            return equip[0].rstrip("_slot")
-        else:
-            print(f"No equip {code} on {self.name}")
-
-    def get_slot_of_item(self, code: str) -> str:
-        inventory = self.inventory
-        slot = [slot["slot"] for slot in inventory if slot["code"] == code]
-        return slot[0]
-
-    def check_item_on(self, code: str) -> bool:
-        inventory = self.inventory
-        if [slot for slot in inventory if slot["code"] == code]:
-            return True
-        return False
-
-    def count_inventory_item(self, code: str) -> int:
-        if self.check_item_on(code):
-            qty = [slot["quantity"] for slot in self.inventory if slot["code"] == code]
-            if qty:
-                return sum(qty)
-        else:
-            return 0
-
-    # ******* COMPLEX ACTIONS ****** #
-
-    async def gathering_items(self, code: str, quantity: int = 1):
+    async def take_best_tool(self, code):  # TODO check bank, inventory and level
         weapon = self.weapon_slot
         subtype = self.game.items[code].subtype
         if subtype == "mining":
@@ -507,6 +189,9 @@ class Player(API):
             if self.count_inventory_item(code):
                 await self.equip(tool, "weapon")
             await self.deposit_item(weapon)
+
+    async def gathering_items(self, code: str, quantity: int = 1):
+        await self.take_best_tool(code)
         if code == "copper_ore":
             await self.move(2, 0)
         elif code == "iron_ore":
@@ -552,7 +237,7 @@ class Player(API):
                             await self.withdraw_item(item_code, need_item)
                         elif bank_item:
                             await self.withdraw_item(item_code, bank_item)
-                            await self.craft_item_scenario(item_code, need_item - bank_item)
+                            await self.craft_item_scenario(item_code, need_item)
                         else:
                             await self.craft_item_scenario(item_code, need_item)
 
@@ -662,8 +347,7 @@ class Player(API):
 
     async def recycling_from_bank(self, code, quantity: int = 1):
         inventory = self.count_inventory_item(code)
-        bank = self.game.get_bank_items(code)
-        bank = bank[0].get("quantity") if bank else 0
+        bank = self.game.bank.items.get(code, 0)
 
         if inventory < quantity <= bank + inventory:
             await self.withdraw_item(code, quantity - inventory)
@@ -679,12 +363,11 @@ class Player(API):
         if not self.task:
             await self.new_task()
         while True:
-            bank_items = self.game.get_bank_items("tasks_coin")
+            bank_items = self.game.bank.items.get("tasks_coin", 0)
             if bank_items:
-                coins = bank_items[0].get("quantity")
-                if coins > 2:
-                    await self.withdraw_item("tasks_coin", coins // 3 * 3)
-                    for _ in range(coins // 3):
+                if bank_items > 2:
+                    await self.withdraw_item("tasks_coin", bank_items // 3 * 3)
+                    for _ in range(bank_items // 3):
                         await self.task_exchange()
                     await self.drop_all()
             types = ["gearcrafting",
@@ -699,17 +382,14 @@ class Player(API):
                         await self.craft_item_scenario(item)
                         await self.drop_all()
                 for item in items:
-                    n = self.game.get_bank_items(item).get("quantity")
+                    n = self.game.bank.items.get(item)
                     if n > 34:
                         await self.recycling_from_bank(item, n - 5)
 
     async def main_mode(self):  # Lert
         await self.wait_before_action()
         await self.drop_all()
-        await self.do_task()
-        await self.craft_item_scenario("mushmush_jacket", 5)
-        await self.change_items("mushmush_jacket")
-        await self.drop_all()
+        # await self.do_task()
         await self.craft_item_scenario("adventurer_boots", 5)
         await self.change_items("adventurer_boots")
         await self.drop_all()
@@ -748,7 +428,7 @@ class Player(API):
     async def work_helper_mode1(self):  # Kerry
         await self.wait_before_action()
         await self.drop_all()
-        await self.do_task()
+        # await self.do_task()
         item_list = [
             # "gold",
             # "gold",
