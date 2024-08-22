@@ -1,48 +1,8 @@
 import asyncio
 import time
 from dataclasses import dataclass
-
-from base_player import BasePlayer
-
-CRAFT_ITEMS = {
-    "cooking": {
-        0: ["cooked_gudgeon"],
-        5: ["cooked_gudgeon"],
-        10: ["cooked_shrimp", "beef_stew", "mushroom_soup", "fried_eggs"],
-        15: ["cooked_shrimp", "cooked_wolf_meat", "fried_eggs"],
-        20: ["cooked_trout", "cheese", "cooked_wolf_meat"],
-        25: ["cooked_trout", "cooked_wolf_meat", "cheese"],
-        30: ["cooked_trout", "mushroom_soup", "beef_stew"],
-    },
-    "weaponcrafting": {
-        0: ["copper_dagger", "wooden_staff"],
-        5: ["fire_staff", "sticky_dagger", "sticky_sword", "water_bow"],
-        10: ["iron_dagger", "greater_wooden_staff"],
-        15: ["mushstaff", "mushstaff", "mushstaff", "mushmush_bow", "multislimes_sword"],
-        20: ["battlestaff", "steel_axe", "battlestaff", "steel_axe",
-             "battlestaff", "steel_axe", "skull_staff", "forest_whip", ],
-        25: ["skull_wand", "dreadful_staff"],
-        30: ["gold_sword", "greater_dreadful_staff"],
-    },
-    "gearcrafting": {
-        0: ["copper_boots"],
-        5: ["copper_armor", "copper_legs_armor", "feather_coat"],
-        10: ["iron_boots", "iron_boots", "iron_boots", "iron_helm"],
-        15: ["magic_wizard_hat", "steel_helm", "steel_boots", "steel_armor"],
-        20: ["magic_wizard_hat", "steel_helm", "steel_boots", "steel_armor"],
-        25: ["magic_wizard_hat", "steel_helm", "steel_boots", "steel_armor"],
-        30: ["magic_wizard_hat", "steel_helm", "steel_boots", "steel_armor"],
-    },
-    "jewelrycrafting": {
-        0: ["copper_ring"],
-        5: ["life_amulet"],
-        10: ["iron_ring"],
-        15: ["life_ring", "air_ring", "earth_ring", "fire_ring", "water_ring"],
-        20: ["steel_ring", "ring_of_chance", "dreadful_ring", "skull_ring", ],
-        25: ["gold_ring", "topaz_ring", "sapphire_ring", "emerald_ring"],
-        30: ["gold_ring", "topaz_ring", "sapphire_ring", "emerald_ring"],
-    },
-}
+from parameters import CRAFT_ITEMS
+from base_player import BasePlayer, wait
 
 
 def time_it(func):
@@ -51,20 +11,9 @@ def time_it(func):
         result = await func(*args, **kwargs)
         end_time = time.time()
         lag = end_time - start_time
-        if lag:
-            print(f"lag: {lag:.2f} {args}")
+        if lag > 0:
+            print(f"lag: {lag:.4f} {args}")
         return result
-
-    return wrapper
-
-
-def wait(func):
-    async def wrapper(*args, **kwargs):
-        response = await func(*args, **kwargs)
-        if response:
-            cooldown = response.get("cooldown", {}).get("total_seconds", 0)
-            await asyncio.sleep(cooldown)
-        return response
 
     return wrapper
 
@@ -171,7 +120,6 @@ class Player(BasePlayer):
         self.inventory = inventory
 
     async def take_best_tool(self, code):  # TODO check bank, inventory and level
-        weapon = self.weapon_slot
         subtype = self.game.items[code].subtype
         if subtype == "mining":
             tool = "iron_pickaxe"
@@ -184,11 +132,11 @@ class Player(BasePlayer):
             print(f"Incorrect subtype {subtype} ({self.name})")
         if self.weapon_slot != tool:
             await self.withdraw_item(tool)
-            if self.weapon_slot:
+            weapon = self.weapon_slot
+            if weapon:
                 await self.unequip("weapon")
-            if self.count_inventory_item(code):
-                await self.equip(tool, "weapon")
-            await self.deposit_item(weapon)
+                await self.deposit_item(weapon)
+            await self.equip(tool, "weapon")
 
     async def gathering_items(self, code: str, quantity: int = 1):
         await self.take_best_tool(code)
@@ -304,7 +252,8 @@ class Player(BasePlayer):
             for effect in stats:
                 for res in monster_res:
                     if effect.get("name", None) == f"attack_{res}":
-                        dmg += effect.get("value", 0) - effect.get("value", 0) * (monster_res[res] * 0.01)
+                        damage = eval(f"self.dmg_{res}")
+                        dmg += effect.get("value", 0) * (damage * 0.01) - effect.get("value", 0) * (monster_res[res] * 0.01)
             if best[0] < dmg:
                 best = (dmg, weapon)
         # TODO Check all slots and change to better item!
@@ -390,25 +339,16 @@ class Player(BasePlayer):
         await self.wait_before_action()
         await self.drop_all()
         # await self.do_task()
-        await self.craft_item_scenario("adventurer_boots", 5)
-        await self.change_items("adventurer_boots")
-        await self.drop_all()
-        await self.craft_item_scenario("mushmush_wizard_hat", 3)
-        await self.change_items("mushmush_wizard_hat")
-        await self.drop_all()
-        await self.craft_item_scenario("lucky_wizard_hat", 3)
-        await self.drop_all()
         await self.craft_item_scenario("forest_whip", 3)
         await self.drop_all()
         await self.craft_item_scenario("skull_staff", 3)
-        await self.drop_all()
         await self.drop_all()
         await self.crafter()
 
     async def work_helper_mode0(self):  # Ralernan (miner/metallurgist)
         await self.wait_before_action()
         await self.drop_all()
-        await self.do_task()
+        # await self.do_task()
         item_list = [
             "gold",
             "gold",
