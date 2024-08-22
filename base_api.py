@@ -12,7 +12,7 @@ def time_it(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         logging.info(msg=f"lag: {end_time - start_time:.2f} {kwargs}")
-        print(f"lag: {end_time - start_time:.2f} {kwargs}")
+        # print(f"lag: {end_time - start_time:.2f} {kwargs}")
         return result
     return wrapper
 

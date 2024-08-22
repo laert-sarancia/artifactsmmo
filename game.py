@@ -1,32 +1,74 @@
 from player import Player
+from monster import Monster
+from item import Item
 from base_api import API
+
+
+class Bank:
+    def __init__(self, game):
+        self.game = game
+        self.money = self.game.get_bank_gold()
+        self.items: dict[str, int] = {item["code"]: item["quantity"] for item in self.game.get_bank_items(page=0)}
+
+    def __repr__(self) -> str:
+        return "Bank"
 
 
 class Game(API):
     def __init__(self):
         super().__init__()
-        self.items = {item["code"]: item for item in self.get_items(page=0)}
-        self.monsters = {item["code"]: item for item in self.get_monsters()}
-
-        self.lert = Player(name="Lert", game=self)
-        self.ralernan = Player(name="Ralernan", game=self)
-        self.kerry = Player(name="Kerry", game=self)
-        self.karven = Player(name="Karven", game=self)
-        self.warrant = Player(name="Warrant", game=self)
+        self.items: dict[str: Item] = {item["code"]: Item(**item) for item in self.get_items(page=0)}
+        self.monsters = {mon["code"]: Monster(**mon) for mon in self.get_monsters()}
+        self.bank = Bank(self)
+        self.lert = Player(game=self, **self.get_character("Lert"))
+        self.ralernan = Player(game=self, **self.get_character("Ralernan"))
+        self.kerry = Player(game=self, **self.get_character("Kerry"))
+        self.karven = Player(game=self, **self.get_character("Karven"))
+        self.warrant = Player(game=self, **self.get_character("Warrant"))
 
     def __repr__(self) -> str:
         return "artifactsmmo"
 
     # ******* GAME ACTIONS ****** #
 
-    def get_bank_items(self, code: str | None = None) -> dict | list:
+    def get_status(self):
+        response = self.get("/")
+        return response
+
+    def get_character(self, name) -> dict | list:
+        response = self.get(endpoint=f"/characters/{name}")
+        return response
+
+    def get_bank_items(
+            self,
+            code: str | None = None,
+            page: int = 1
+    ) -> dict | list:
         endpoint = "/my/bank/items"
+        params = {"item_code": code}
         if code:
-            response = self.get(
+            params.update({"code": code})
+        if page:
+            params.update({"page": page})
+
+        if page != 0:
+            result = self.get(
                 endpoint=endpoint,
-                params={"item_code": code})
+                params=params
+            )
         else:
-            response = self.get(endpoint)
+            result = []
+            for page in range(1, 5):
+                result += self.get(
+                    endpoint=endpoint,
+                    params={**params,
+                            "page": page}
+                )
+        return result
+
+    def get_bank_gold(self) -> dict | list:
+        endpoint = "/my/bank/gold"
+        response = self.get(endpoint=endpoint)
         return response
 
     def get_monster(self, code: str) -> dict:
@@ -75,7 +117,7 @@ class Game(API):
         if item_type:
             params.update({"item_type": item_type})
         if page:
-            params.update({"craft_skill": page})
+            params.update({"page": page})
         result = []
         if params:
             if page != 0:
