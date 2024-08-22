@@ -1,19 +1,19 @@
+from dataclasses import dataclass
 from player import Player
 from monster import Monster
 from item import Item
 from base_api import API
 
 
+@dataclass
 class Bank:
     def __init__(self, game):
         self.game = game
         self.money = self.game.get_bank_gold()
         self.items: dict[str, int] = {item["code"]: item["quantity"] for item in self.game.get_bank_items(page=0)}
 
-    def __repr__(self) -> str:
-        return "Bank"
 
-
+@dataclass
 class Game(API):
     def __init__(self):
         super().__init__()
@@ -25,9 +25,6 @@ class Game(API):
         self.kerry = Player(game=self, **self.get_character("Kerry"))
         self.karven = Player(game=self, **self.get_character("Karven"))
         self.warrant = Player(game=self, **self.get_character("Warrant"))
-
-    def __repr__(self) -> str:
-        return "artifactsmmo"
 
     # ******* GAME ACTIONS ****** #
 

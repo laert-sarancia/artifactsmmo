@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class Monster:
     def __init__(
             self,
@@ -32,9 +36,6 @@ class Monster:
         self.min_gold = min_gold
         self.max_gold = max_gold
         self.drops = drops
-
-    def __repr__(self):
-        return self.code
 
     def get_res(self):
         return {
