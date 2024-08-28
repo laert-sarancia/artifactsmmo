@@ -3,7 +3,13 @@ import time
 import logging
 import requests
 from dotenv import dotenv_values
-logging.basicConfig(filename=f"logs/log_{time.time()}.log", level=logging.INFO)
+
+
+logging.basicConfig(
+    filename=f"logs/log_{time.time()}.log",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=logging.INFO
+)
 
 
 def time_it(func):
