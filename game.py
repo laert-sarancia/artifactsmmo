@@ -18,7 +18,7 @@ class Game(API):
     def __init__(self):
         super().__init__()
         self.items: dict[str: Item] = {item["code"]: Item(**item) for item in self.get_items(page=0)}
-        self.monsters = {mon["code"]: Monster(**mon) for mon in self.get_monsters()}
+        self.monsters: dict[str, Monster] = {mon["code"]: Monster(**mon) for mon in self.get_monsters()}
         self.bank = Bank(self)
         self.lert = Player(game=self, **self.get_character("Lert"))
         self.ralernan = Player(game=self, **self.get_character("Ralernan"))
@@ -64,7 +64,7 @@ class Game(API):
         return result
 
     def get_bank_gold(self) -> dict | list:
-        endpoint = "/my/bank/gold"
+        endpoint = "/my/bank"
         response = self.get(endpoint=endpoint)
         return response
 
