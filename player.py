@@ -220,15 +220,15 @@ class Player(BasePlayer):
                             result = await self.craft_item_scenario(item_code, need_item)
                             if result == 500:
                                 return 500
-
+                if eval(f"self.{self.game.items[code].craft.get('skill')}_level") < self.game.items[code].level:
+                    return 500
                 await self.move_to_craft(skill)
                 await self.crafting(code, quantity)
             else:
                 if self.game.items[code].subtype in ["woodcutting", "fishing", "mining"]:
-                    if eval(f"self.{self.game.items[code].subtype}_level") > self.game.items[code].level:
-                        await self.gathering_items(code, quantity)
-                    else:
+                    if eval(f"self.{self.game.items[code].subtype}_level") < self.game.items[code].level:
                         return 500
+                    await self.gathering_items(code, quantity)
                 else:
                     while self.count_inventory_item(code) < quantity:
                         monsters = self.game.get_monsters(drop=code)
@@ -440,19 +440,18 @@ class Player(BasePlayer):
                 "weaponcrafting": self.weaponcrafting_level,
                 # "jewelrycrafting": self.jewelrycrafting_level
             }
-            if len(set(types.values())) == 1:
+            if len(set(types.values())) == 1:  # Same levels
                 tp = "gearcrafting"
                 level = types[tp] - (types[tp] % 5)
                 items = CRAFT_ITEMS[tp][level]
-                for chrctr in range(5):
-                    for item in items:
-                        result = await self.craft_item_scenario(item)
-                        if result in [404, 500]:
-                            break
-                        await self.drop_all()
                 for item in items:
+                    print(f"{self.name} crafting {item}")
+                    result = await self.craft_item_scenario(item)
+                    if result in [404, 500]:
+                        continue
+                    await self.drop_all()
                     n = self.game.bank.items.get(item)
-                    if n > 10:
+                    if n and n > 6:
                         await self.recycling_item(item, n - 5)
             else:
                 for tp in types:
@@ -461,15 +460,14 @@ class Player(BasePlayer):
                         continue
                     level = types[tp] - (types[tp] % 5)
                     items = CRAFT_ITEMS[tp][level]
-                    for chrctr in range(5):
-                        for item in items:
-                            result = await self.craft_item_scenario(item)
-                            if result in [404, 500]:
-                                break
-                            await self.drop_all()
                     for item in items:
+                        print(f"{self.name} crafting {item}")
+                        result = await self.craft_item_scenario(item)
+                        if result in [404, 500]:
+                            continue
+                        await self.drop_all()
                         n = self.game.bank.items.get(item)
-                        if n > 10:
+                        if n and n > 6:
                             await self.recycling_item(item, n - 5)
 
     async def recycling_item(self, code, quantity: int = 1):
@@ -492,7 +490,7 @@ class Player(BasePlayer):
                  self.game.items[item].craft]
         for item in items:
             n = self.game.bank.items.get(item)
-            if n > 10:
+            if n and n > 10:
                 await self.recycling_item(item, n - 5)
 
     async def take_food(self):
@@ -527,14 +525,15 @@ class Player(BasePlayer):
         await self.take_food()
 
     async def extra_action(self):
-        # await self.withdraw_item("copper_ring", 10)
-        # await self.sell("copper_ring", 10)
+        # await self.withdraw_item("copper_ring", 1)
+        # await self.withdraw_item("copper_boots", 4)
+        # await self.sell("copper_ring", 1)
+        # await self.sell("copper_boots", 4)
 
-        # await self.recycling_item("wooden_shield", 7)
-        # await self.recycling_item("copper_armor", 3)
-        # await self.recycling_item("copper_legs_armor", 2)
-        # await self.recycling_item("feather_coat", 4)
-        # await self.recycling_item("copper_dagger", 1)
+        # await self.recycling_item("sticky_dagger", 5)
+        # await self.recycling_item("fire_staff", 4)
+        # await self.recycling_item("water_bow", 3)
+        # await self.recycling_item("sticky_sword", 5)
 
         # await self.withdraw_money(self.game.bank.money["gold"])
         # await self.buy("feather_coat", 25)

@@ -13,8 +13,8 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
     "weaponcrafting": {
         0: ["copper_dagger"],
         5: ["sticky_sword", "sticky_dagger", "fire_staff", "water_bow"],
-        10: ["iron_dagger", "greater_wooden_staff"],
-        15: ["mushstaff", "mushstaff", "mushstaff", "mushmush_bow", "multislimes_sword"],
+        10: ["iron_sword", "iron_dagger", "fire_bow", "greater_wooden_staff"],
+        15: ["mushstaff", "mushmush_bow", "multislimes_sword"],
         20: ["battlestaff", "steel_axe", "battlestaff", "steel_axe",
              "battlestaff", "steel_axe", "skull_staff", "forest_whip", ],
         25: ["skull_wand", "dreadful_staff"],
@@ -24,7 +24,7 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
     "gearcrafting": {
         0: ["wooden_shield", "copper_helmet", "copper_helmet", "wooden_shield", "copper_boots"],
         5: ["copper_armor", "copper_legs_armor", "feather_coat", "feather_coat"],
-        10: ["iron_boots", "iron_boots", "iron_boots", "iron_helm"],
+        10: ["slime_shield", "leather_hat", "iron_boots", "iron_helm", "iron_armor", "iron_legs_armor", "adventurer_pants", "adventurer_vest"],
         15: ["adventurer_boots", "mushmush_wizard_hat", "lucky_wizard_hat"],
         20: ["magic_wizard_hat", "steel_shield", "steel_helm", "steel_boots", "steel_armor", "steel_legs_armor"
                                                                                              "tromatising_mask",
@@ -36,7 +36,7 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
     "jewelrycrafting": {
         0: ["copper_ring"],
         5: ["life_amulet"],
-        10: ["iron_ring"],
+        10: ["iron_ring", "air_and_water_amulet", "fire_and_earth_amulet"],
         15: ["life_ring", "air_ring", "earth_ring", "fire_ring", "water_ring"],
         20: ["steel_ring", "ring_of_chance", "dreadful_ring", "skull_ring", ],
         25: ["gold_ring", "topaz_ring", "sapphire_ring", "emerald_ring"],
