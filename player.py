@@ -240,7 +240,9 @@ class Player(BasePlayer):
 
     def do_by_list(self, role: str) -> list:
         items = []
-        for level in range(0, 35, 5):
+        start = self.level - self.level%5 - 5 if self.level - self.level%5 - 5 > 0 else 0
+        stop = self.level - self.level%5 + 1
+        for level in range(start, stop, 5):
             if self.level >= level and eval(f"self.{role}_level") >= level:
                 if role == "cooking" and self.fishing_level < level:
                     break
@@ -255,12 +257,22 @@ class Player(BasePlayer):
         await self.new_task()
 
     async def change_items(self, code: str):
-        slot = f'{self.game.items[code].i_type}'
-        prev_item = eval(f"self.{slot}_slot")
-        await self.withdraw_item(code)
-        if eval(f'self.{slot}_slot'):
+        item_type = self.game.items[code].i_type
+        slot = f'{self.game.items[code].i_type}_slot'
+        if item_type in ["ring", "consumable"]:
+            for i in range(1, 3):
+                if eval(f'self.{item_type}{i}_slot') == code:
+                    continue
+                else:
+                    slot = f'{item_type}{i}_slot'
+        prev_item = eval(f"self.{slot}")
+        if prev_item == code:
+            return
+        if not self.count_inventory_item(code):
+            await self.withdraw_item(code)
+        if eval(f'self.{slot}'):
             await self.wait_before_action()
-            await self.unequip(slot)
+            await self.unequip(slot.rstrip("_slot"))
             await self.deposit_item(prev_item)
         await self.wait_before_action()
         await self.equip(code, slot)
@@ -301,31 +313,45 @@ class Player(BasePlayer):
     @time_it
     async def take_best_gear(self, monster):
         monster_attack = self.game.monsters[monster].get_attack()
-        bank_items = [item for item in self.game.bank.items]
-        my_items = [item.get("code") for item in self.inventory if item.get("code")]
-        all_items = my_items + bank_items
-        gears = {}
-        for slot_type, item_type in SLOT_TYPES:
-            for gear in all_items:
-                item = self.game.items[gear]
-                if item.i_type == item_type \
-                        and item.level <= self.level:
-                    gears[item_type] = {gear: item.effects}
-            best: tuple[int, str | None] = (0, None)
+        monster_res = self.game.monsters[monster].get_res()
 
-            for gear, stats in gears[item_type].items():
+        bank_items = [item for item in self.game.bank.items]
+        tekken_items = []
+        for slot in SLOT_TYPES:
+            if eval(f"self.{slot}"):
+                tekken_items.append(eval(f"self.{slot}"))
+        my_items = [item.get("code") for item in self.inventory if item.get("code")]
+        all_items = my_items + bank_items + tekken_items
+
+        for slot_type, item_type in SLOT_TYPES.items():
+            if "weapon" in slot_type:
+                continue
+            elif "art" in slot_type:
+                break
+            gears = {item: self.game.items[item].effects for item in all_items if
+                          self.game.items[item].i_type == item_type and
+                          self.game.items[item].level <= self.level}
+            if not gears:
+                continue
+
+            best: tuple[int, str | None] = (-100, None)
+            for gear, stats in gears.items():
                 dmg = 0
+                df = 0
                 for effect in stats:
+                    if effect["name"] == "hp":
+                        dmg += effect.get("value", 0)
                     for val in monster_attack:
-                        if effect.get("name", None) == f"attack_{val}":
+                        if val in effect["name"]:
                             bonus_damage = effect.get("value", 0)
                             attak = eval(f"self.attack_{val}")
-                            total_damage = attak * (bonus_damage * 0.01)
-                            dmg += total_damage * (eval(f"self.res_{val}")) - total_damage * (
-                                    monster_attack[val] * 0.01)
-                if best[0] < dmg:
-                    best = (dmg, gear)
-            # TODO Check all slots and change to better item!
+                            total_damage = attak * (1 + bonus_damage * 0.01)
+                            dmg += total_damage - total_damage * (monster_res[val] * 0.01)
+                            df += monster_attack[val] - monster_attack[val] * (eval(f"self.res_{val}") * 0.01)
+                result_dmg = dmg - df
+
+                if best[0] < result_dmg:
+                    best = (result_dmg, gear)
             if best[1]:
                 if eval(f"self.{slot_type}") != best[1]:
                     if self.count_inventory_item(best[1]):
@@ -336,7 +362,7 @@ class Player(BasePlayer):
 
     async def kill_monster(self, monster: str, quantity: int = 1):  # TODO calc battle and select equip
         await self.take_best_weapon(monster)
-        # await self.take_best_gear(monster)
+        await self.take_best_gear(monster)
         if await self.is_win(monster):
             await self.wait_before_action()
             await self.move(**self.game.get_monster_coord(monster))
@@ -349,7 +375,6 @@ class Player(BasePlayer):
             return 500
 
     async def is_win(self, monster) -> bool:
-        await self.take_best_weapon(monster)
         mob = self.game.monsters[monster]
 
         my_hp = self.hp
@@ -398,7 +423,7 @@ class Player(BasePlayer):
         max_level = 0
         while True:
             await self.wear()
-            result = await self.do_task()
+            await self.do_task()
             await self.drop_all()
             bank_items = self.game.bank.items.get("tasks_coin", 0)
             if bank_items:
@@ -499,16 +524,24 @@ class Player(BasePlayer):
         await self.take_food()
 
     async def extra_action(self):
+        # await self.withdraw_item("copper_ring", 10)
+        # await self.sell("copper_ring", 10)
+
         # await self.recycling_item("wooden_shield", 7)
-        # await self.recycling_item("copper_armor", 4)
-        # await self.recycling_item("copper_legs_armor", 1)
+        # await self.recycling_item("copper_armor", 3)
+        # await self.recycling_item("copper_legs_armor", 2)
+        # await self.recycling_item("feather_coat", 4)
         # await self.recycling_item("copper_dagger", 1)
+
         # await self.withdraw_money(self.game.bank.money["gold"])
         # await self.buy("feather_coat", 25)
         # await self.craft_item_scenario("fire_staff", 10)
         # await self.sell("fire_staff", 10)
 
-        # await self.craft_item_scenario("copper_legs_armor", 1)
+        # await self.craft_item_scenario("iron_pickaxe", 3)
+        # await self.craft_item_scenario("iron_axe", 2)
+        # await self.craft_item_scenario("spruce_fishing_rod", 1)
+
         # await self.equip("copper_legs_armor", "leg_armor")
         # await self.recycling_item("feather_coat", 20)
         # await self.sell("feather", 40)
