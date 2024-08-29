@@ -275,7 +275,7 @@ class Player(BasePlayer):
             await self.unequip(slot.rstrip("_slot"))
             await self.deposit_item(prev_item)
         await self.wait_before_action()
-        await self.equip(code, slot)
+        await self.equip(code, slot.rstrip("_slot"))
 
     @time_it
     async def take_best_weapon(self, monster):
