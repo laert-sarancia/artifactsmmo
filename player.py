@@ -225,7 +225,10 @@ class Player(BasePlayer):
                 await self.crafting(code, quantity)
             else:
                 if self.game.items[code].subtype in ["woodcutting", "fishing", "mining"]:
-                    await self.gathering_items(code, quantity)
+                    if eval(f"self.{self.game.items[code].subtype}_level") > self.game.items[code].level:
+                        await self.gathering_items(code, quantity)
+                    else:
+                        return 500
                 else:
                     while self.count_inventory_item(code) < quantity:
                         monsters = self.game.get_monsters(drop=code)
@@ -272,10 +275,10 @@ class Player(BasePlayer):
             await self.withdraw_item(code)
         if eval(f'self.{slot}'):
             await self.wait_before_action()
-            await self.unequip(slot.rstrip("_slot"))
+            await self.unequip(slot.replace("_slot", ""))
             await self.deposit_item(prev_item)
         await self.wait_before_action()
-        await self.equip(code, slot.rstrip("_slot"))
+        await self.equip(code, slot.replace("_slot", ""))
 
     @time_it
     async def take_best_weapon(self, monster):
@@ -360,7 +363,7 @@ class Player(BasePlayer):
                     else:
                         await self.change_items(best[1])
 
-    async def kill_monster(self, monster: str, quantity: int = 1):  # TODO calc battle and select equip
+    async def kill_monster(self, monster: str, quantity: int = 1):
         await self.take_best_weapon(monster)
         await self.take_best_gear(monster)
         if await self.is_win(monster):
@@ -535,12 +538,8 @@ class Player(BasePlayer):
 
         # await self.withdraw_money(self.game.bank.money["gold"])
         # await self.buy("feather_coat", 25)
-        # await self.craft_item_scenario("fire_staff", 10)
-        # await self.sell("fire_staff", 10)
-
-        # await self.craft_item_scenario("iron_pickaxe", 3)
-        # await self.craft_item_scenario("iron_axe", 2)
         # await self.craft_item_scenario("spruce_fishing_rod", 1)
+        # await self.sell("fire_staff", 10)
 
         # await self.equip("copper_legs_armor", "leg_armor")
         # await self.recycling_item("feather_coat", 20)
