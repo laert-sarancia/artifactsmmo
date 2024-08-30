@@ -10,8 +10,8 @@ def time_it(func):
         result = await func(*args, **kwargs)
         end_time = time.time()
         lag = end_time - start_time
-        if lag > 0:
-            print(f"lag: {lag:.4f} {args}")
+        # if lag > 0:
+        #     print(f"lag: {lag:.3f} {args}")
         return result
 
     return wrapper
@@ -180,10 +180,15 @@ class Player(BasePlayer):
             else:
                 tool = None
                 print(f"Incorrect subtype {subtype} ({self.name})")
-            if tool in self.game.bank.items:
-                if self.weapon_slot != tool:
+            weapon = self.weapon_slot
+            if self.weapon_slot == tool:
+                return
+            if weapon:
+                if self.count_inventory_item(tool):
+                    await self.unequip("weapon")
+                    await self.equip(tool, "weapon")
+                elif tool in self.game.bank.items:
                     await self.withdraw_item(tool)
-                    weapon = self.weapon_slot
                     if weapon:
                         await self.unequip("weapon")
                         await self.deposit_item(weapon)
@@ -231,16 +236,18 @@ class Player(BasePlayer):
                         return 500
                     await self.gathering_items(code, quantity)
                 else:
-                    while self.count_inventory_item(code) < quantity:
-                        monsters = self.game.get_monsters(drop=code)
-                        if monsters:
-                            monster = monsters[0].get("code")
+                    monsters = self.game.get_monsters(drop=code)
+                    if monsters:
+                        monster = monsters[0].get("code")
+                        await self.take_best_weapon(monster)
+                        await self.take_best_gear(monster)
+                        while self.count_inventory_item(code) < quantity:
                             result = await self.kill_monster(monster)
                             if result == 500:
                                 return 500
-                        else:
-                            print(f"No monster here ({self.name})")
-                            return 404
+                    else:
+                        print(f"No monster here ({self.name})")
+                        return 404
 
     def do_by_list(self, role: str) -> list:
         items = []
@@ -366,8 +373,6 @@ class Player(BasePlayer):
                         await self.change_items(best[1])
 
     async def kill_monster(self, monster: str, quantity: int = 1):
-        await self.take_best_weapon(monster)
-        await self.take_best_gear(monster)
         if await self.is_win(monster):
             await self.wait_before_action()
             await self.move(**self.game.get_monster_coord(monster))
@@ -406,6 +411,8 @@ class Player(BasePlayer):
     async def do_task(self):
         if self.task_type == "monsters":
             monster = self.task
+            await self.take_best_weapon(monster)
+            await self.take_best_gear(monster)
             result = await self.kill_monster(
                 monster,
                 self.task_total - self.task_progress)
@@ -419,8 +426,10 @@ class Player(BasePlayer):
         if inventory:
             for slot in reversed(inventory):
                 if slot["quantity"]:
+                    if self.game.items[slot["code"]].subtype == "tool":
+                        continue
                     await self.deposit_item(slot["code"], slot["quantity"])
-                    await self.deposit_money(self.gold)
+        await self.deposit_money(self.gold)
 
     async def extend_bank(self):
         if self.game.bank_details().get("gold") == self.game.bank_details().get("next_expansion_cost"):
@@ -431,16 +440,9 @@ class Player(BasePlayer):
             await self.new_task()
         max_level = 0
         while True:
-            await self.wear()
             await self.do_task()
             await self.drop_all()
-            bank_items = self.game.bank.items.get("tasks_coin", 0)
-            if bank_items:
-                if bank_items > 2:
-                    await self.withdraw_item("tasks_coin", bank_items // 3 * 3)
-                    for _ in range(bank_items // 3):
-                        await self.task_exchange()
-                    await self.drop_all()
+            await self.do_exchange()
             types = {
                 "gearcrafting": self.gearcrafting_level,
                 "weaponcrafting": self.weaponcrafting_level,
@@ -475,6 +477,18 @@ class Player(BasePlayer):
                         n = self.game.bank.items.get(item)
                         if n and n > 6:
                             await self.recycling_item(item, n - 5)
+
+    async def do_exchange(self):
+        bank_items = self.game.bank.items.get("tasks_coin", 0)
+        my_items = self.count_inventory_item("tasks_coin")
+        if bank_items or my_items:
+            all_items = bank_items + my_items
+            if not self.count_inventory_item("tasks_coin") <= 2:
+                if all_items > 2:
+                    await self.withdraw_item("tasks_coin", all_items // 3 * 3)
+            for _ in range(all_items // 3):
+                await self.task_exchange()
+            await self.drop_all()
 
     async def recycling_item(self, code, quantity: int = 1):
         inventory = self.count_inventory_item(code)
@@ -514,28 +528,11 @@ class Player(BasePlayer):
                 if self.count_inventory_item(items[0]):
                     await self.equip(items[0], slot, qty)
 
-    async def wear(self):
-        for slot in SLOT_TYPES:
-            if "art" in slot:
-                break
-            elif not eval(f"self.{slot}"):
-                inventory = [item.get("code") for
-                             item in self.inventory if item.get("code") and
-                             self.game.items[item.get("code")].i_type == SLOT_TYPES[slot]]
-                bank = [item for item in self.game.bank.items if
-                        self.game.items[item].i_type == SLOT_TYPES[slot]]
-                if inventory:
-                    await self.equip(bank[-1], slot.replace("_slot", ""))
-                elif bank:
-                    await self.withdraw_item(bank[-1])
-                    await self.equip(bank[-1], slot.replace("_slot", ""))
-        await self.take_food()
-
     async def extra_action(self):
         # await self.withdraw_item("copper_ring", 1)
         # await self.withdraw_item("copper_helmet", 1)
         # await self.sell("copper_ring", 1)
-        await self.sell("copper_helmet", 1)
+        # await self.sell("copper_helmet", 1)
 
         # await self.recycling_item("sticky_dagger", 5)
         # await self.recycling_item("fire_staff", 4)
@@ -544,7 +541,7 @@ class Player(BasePlayer):
 
         # await self.withdraw_money(self.game.bank.money["gold"])
         # await self.buy("feather_coat", 25)
-        # await self.craft_item_scenario("spruce_fishing_rod", 1)
+        # await self.craft_item_scenario("leather_boots", 5)
         # await self.sell("fire_staff", 10)
 
         # await self.equip("copper_legs_armor", "leg_armor")
@@ -565,7 +562,6 @@ class Player(BasePlayer):
             await self.new_task()
         await self.drop_all()
         while True:
-            await self.wear()
             await self.do_task()
             await self.drop_all()
             await self.recycle_all()
@@ -581,7 +577,6 @@ class Player(BasePlayer):
             await self.new_task()
         await self.drop_all()
         while True:
-            await self.wear()
             await self.do_task()
             await self.drop_all()
             for item in self.do_by_list("mining"):
@@ -596,7 +591,6 @@ class Player(BasePlayer):
             await self.new_task()
         await self.drop_all()
         while True:
-            await self.wear()
             await self.do_task()
             await self.drop_all()
             for item in self.do_by_list("woodcutting"):
@@ -611,7 +605,6 @@ class Player(BasePlayer):
             await self.new_task()
         await self.drop_all()
         while True:
-            await self.wear()
             await self.do_task()
             await self.drop_all()
             for item in self.do_by_list("cooking"):
