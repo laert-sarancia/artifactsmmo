@@ -63,6 +63,10 @@ class Game(API):
                 )
         return result
 
+    def bank_details(self):
+        response = self.get(endpoint="/my/bank")
+        return response
+
     def get_bank_gold(self) -> dict | list:
         endpoint = "/my/bank"
         response = self.get(endpoint=endpoint)

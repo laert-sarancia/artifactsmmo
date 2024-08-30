@@ -289,6 +289,17 @@ class BasePlayer(API):
         return response
 
     @wait
+    async def buy_expansion(self):
+        await self.move(4, 1)
+        response = self.post(endpoint=f"/my/{self.name}/action/bank/buy_expansion")
+        character = response.get("character")
+        if character:
+            self.update_character(**character)
+        else:
+            print(f"NO CHARACTER IN RESPONSE ({self.name})")
+        return response
+
+    @wait
     async def deposit_money(self, quantity: int = 1):
         if self.gold:
             await self.move(4, 1)
