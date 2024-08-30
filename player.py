@@ -187,7 +187,8 @@ class Player(BasePlayer):
                     if weapon:
                         await self.unequip("weapon")
                         await self.deposit_item(weapon)
-                    await self.equip(tool, "weapon")
+                    if self.count_inventory_item(code):
+                        await self.equip(tool, "weapon")
 
     async def gathering_items(self, code: str, quantity: int = 1):
         await self.take_best_tool(code)
@@ -278,7 +279,8 @@ class Player(BasePlayer):
             await self.unequip(slot.replace("_slot", ""))
             await self.deposit_item(prev_item)
         await self.wait_before_action()
-        await self.equip(code, slot.replace("_slot", ""))
+        if self.count_inventory_item(code):
+            await self.equip(code, slot.replace("_slot", ""))
 
     @time_it
     async def take_best_weapon(self, monster):
@@ -420,6 +422,10 @@ class Player(BasePlayer):
                     await self.deposit_item(slot["code"], slot["quantity"])
                     await self.deposit_money(self.gold)
 
+    async def extend_bank(self):
+        if self.game.bank_details().get("gold") == self.game.bank_details().get("next_expansion_cost"):
+            await self.buy_expansion()
+
     async def crafter(self):
         if not self.task:
             await self.new_task()
@@ -505,7 +511,8 @@ class Player(BasePlayer):
                     qty = self.game.bank.items[items[0]]
                 await self.withdraw_item(items[0], qty)
                 slot = "consumable1" if not self.consumable1_slot_quantity else "consumable2"
-                await self.equip(items[0], slot, qty)
+                if self.count_inventory_item(items[0]):
+                    await self.equip(items[0], slot, qty)
 
     async def wear(self):
         for slot in SLOT_TYPES:
@@ -526,9 +533,9 @@ class Player(BasePlayer):
 
     async def extra_action(self):
         # await self.withdraw_item("copper_ring", 1)
-        # await self.withdraw_item("copper_boots", 4)
+        # await self.withdraw_item("copper_helmet", 1)
         # await self.sell("copper_ring", 1)
-        # await self.sell("copper_boots", 4)
+        await self.sell("copper_helmet", 1)
 
         # await self.recycling_item("sticky_dagger", 5)
         # await self.recycling_item("fire_staff", 4)
