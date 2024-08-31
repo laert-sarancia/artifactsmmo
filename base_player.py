@@ -370,17 +370,13 @@ class BasePlayer(API):
                 print(f"No items {code} ({self.name})")
                 return {}
             if in_bank <= quantity:
-                response = self.post(
-                    endpoint=endpoint,
-                    data={"code": code,
-                          "quantity": in_bank}
-                )
-            else:
-                response = self.post(
-                    endpoint=endpoint,
-                    data={"code": code,
-                          "quantity": quantity}
-                )
+                quantity = in_bank
+            print(f"{self.name} get {quantity} {code}")
+            response = self.post(
+                endpoint=endpoint,
+                data={"code": code,
+                      "quantity": quantity}
+            )
             character = response.get("character")
 
             # Decrease or remove from bank
