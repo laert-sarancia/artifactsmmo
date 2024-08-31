@@ -529,10 +529,10 @@ class Player(BasePlayer):
                     await self.equip(items[0], slot, qty)
 
     async def extra_action(self):
-        # await self.withdraw_item("copper_ring", 1)
+        # await self.withdraw_item("wooden_shield", 1)
         # await self.withdraw_item("copper_helmet", 1)
-        # await self.sell("copper_ring", 1)
-        # await self.sell("copper_helmet", 1)
+        await self.sell("wooden_shield", 12)
+        await self.sell("copper_helmet", 1)
 
         # await self.recycling_item("sticky_dagger", 5)
         # await self.recycling_item("fire_staff", 4)
@@ -560,7 +560,6 @@ class Player(BasePlayer):
         await self.wait_before_action()
         if not self.task:
             await self.new_task()
-        await self.drop_all()
         while True:
             await self.do_task()
             await self.drop_all()
@@ -575,7 +574,6 @@ class Player(BasePlayer):
         await self.wait_before_action()
         if not self.task:
             await self.new_task()
-        await self.drop_all()
         while True:
             await self.do_task()
             await self.drop_all()
@@ -589,7 +587,6 @@ class Player(BasePlayer):
         await self.wait_before_action()
         if not self.task:
             await self.new_task()
-        await self.drop_all()
         while True:
             await self.do_task()
             await self.drop_all()
@@ -603,7 +600,6 @@ class Player(BasePlayer):
         await self.wait_before_action()
         if not self.task:
             await self.new_task()
-        await self.drop_all()
         while True:
             await self.do_task()
             await self.drop_all()
