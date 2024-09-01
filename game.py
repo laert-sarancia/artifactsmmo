@@ -9,8 +9,14 @@ from base_api import API
 class Bank:
     def __init__(self, game):
         self.game = game
-        self.money = self.game.get_bank_gold()
+        self.money = self.game.get_bank_details()["gold"]
+        self.slots = self.game.get_bank_details()["slots"]
+        self.expansions = self.game.get_bank_details()["expansions"]
+        self.next_expansion_cost = self.game.get_bank_details()["next_expansion_cost"]
         self.items: dict[str, int] = {item["code"]: item["quantity"] for item in self.game.get_bank_items(page=0)}
+
+    def update_bank(self, **kwargs):
+        self.__dict__.update(**kwargs)
 
 
 @dataclass
@@ -27,6 +33,9 @@ class Game(API):
         self.warrant = Player(game=self, **self.get_character("Warrant"))
 
     # ******* GAME ACTIONS ****** #
+
+    def update_bank(self):
+        self.bank.update_bank(**self.get_bank_details())
 
     def get_status(self):
         response = self.get("/")
@@ -63,13 +72,8 @@ class Game(API):
                 )
         return result
 
-    def bank_details(self):
+    def get_bank_details(self) -> dict | list:
         response = self.get(endpoint="/my/bank")
-        return response
-
-    def get_bank_gold(self) -> dict | list:
-        endpoint = "/my/bank"
-        response = self.get(endpoint=endpoint)
         return response
 
     def get_monster(self, code: str) -> dict:

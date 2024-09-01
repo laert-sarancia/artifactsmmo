@@ -432,14 +432,16 @@ class Player(BasePlayer):
         await self.deposit_money(self.gold)
 
     async def extend_bank(self):
-        if self.game.bank_details().get("gold") == self.game.bank_details().get("next_expansion_cost"):
-            await self.buy_expansion()
+        if self.game.bank.money >= self.game.bank.next_expansion_cost:
+            await self.withdraw_money(self.game.bank.next_expansion_cost)
+            await self.extend_bank()
 
     async def crafter(self):
         if not self.task:
             await self.new_task()
         max_level = 0
         while True:
+            await self.extend_bank()
             await self.do_task()
             await self.drop_all()
             await self.do_exchange()
@@ -453,7 +455,7 @@ class Player(BasePlayer):
                 level = types[tp] - (types[tp] % 5)
                 items = CRAFT_ITEMS[tp][level]
                 for item in items:
-                    print(f"{self.name} crafting {item}")
+                    print(f"{self.name.ljust(9)} crafting {item}")
                     result = await self.craft_item_scenario(item)
                     if result in [404, 500]:
                         continue
@@ -469,7 +471,7 @@ class Player(BasePlayer):
                     level = types[tp] - (types[tp] % 5)
                     items = CRAFT_ITEMS[tp][level]
                     for item in items:
-                        print(f"{self.name} crafting {item}")
+                        print(f"{self.name.ljust(9)} crafting {item}")
                         result = await self.craft_item_scenario(item)
                         if result in [404, 500]:
                             continue
@@ -529,10 +531,11 @@ class Player(BasePlayer):
                     await self.equip(items[0], slot, qty)
 
     async def extra_action(self):
-        # await self.withdraw_item("wooden_shield", 1)
-        # await self.withdraw_item("copper_helmet", 1)
-        await self.sell("wooden_shield", 12)
-        await self.sell("copper_helmet", 1)
+        # await self.withdraw_item("copper", 50)
+        # await self.withdraw_item("copper_ring", 2)
+        # await self.sell("copper", 25)
+        # await self.sell("copper", 25)
+        # await self.sell("copper_ring", 2)
 
         # await self.recycling_item("sticky_dagger", 5)
         # await self.recycling_item("fire_staff", 4)
@@ -541,8 +544,9 @@ class Player(BasePlayer):
 
         # await self.withdraw_money(self.game.bank.money["gold"])
         # await self.buy("feather_coat", 25)
-        # await self.craft_item_scenario("leather_boots", 5)
-        # await self.sell("fire_staff", 10)
+        # await self.sell("copper_helmet", 2)
+        # await self.craft_item_scenario("copper_helmet", 1)
+        # await self.sell("copper_helmet", 1)
 
         # await self.equip("copper_legs_armor", "leg_armor")
         # await self.recycling_item("feather_coat", 20)
@@ -562,6 +566,7 @@ class Player(BasePlayer):
             await self.new_task()
         while True:
             await self.do_task()
+            await self.do_exchange()
             await self.drop_all()
             await self.recycle_all()
             for item in self.do_by_list("jewelrycrafting"):
@@ -576,6 +581,7 @@ class Player(BasePlayer):
             await self.new_task()
         while True:
             await self.do_task()
+            await self.do_exchange()
             await self.drop_all()
             for item in self.do_by_list("mining"):
                 result = await self.craft_item_scenario(item, 10)
@@ -589,6 +595,7 @@ class Player(BasePlayer):
             await self.new_task()
         while True:
             await self.do_task()
+            await self.do_exchange()
             await self.drop_all()
             for item in self.do_by_list("woodcutting"):
                 result = await self.craft_item_scenario(item, 10)
@@ -602,6 +609,7 @@ class Player(BasePlayer):
             await self.new_task()
         while True:
             await self.do_task()
+            await self.do_exchange()
             await self.drop_all()
             for item in self.do_by_list("cooking"):
                 result = await self.craft_item_scenario(item, 10)
