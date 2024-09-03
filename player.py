@@ -554,7 +554,7 @@ class Player(BasePlayer):
 
     async def extra_action(self):
         items = {
-            # "slime_shield": 1,
+            # "adventurer_helmet": 10,
             # "feather_coat": 2,
             # "copper_legs_armor": 2,
             # "copper_ring": 1,
@@ -562,12 +562,14 @@ class Player(BasePlayer):
         }
         if items:
             for item, qty in items.items():
-                await self.withdraw_item(item, qty)
+                # await self.withdraw_money(self.game.bank.money)
+                # await self.buy(item, qty)
+                # await self.withdraw_item(item, qty)
                 # await self.craft_item_scenario(item, qty)
+                await self.recycling_item(item, qty)
                 await self.sell(item, qty)
-                # await self.recycling_item(item, qty)
 
-        # await self.withdraw_money(self.game.bank.money["gold"])
+        # await self.withdraw_money(self.game.bank.money)
         # await self.buy("feather_coat", 25)
         # await self.sell("copper_helmet", 2)
         # await self.craft_item_scenario("copper_helmet", 1)
