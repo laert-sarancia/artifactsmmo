@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+from parameters import SLOT_TYPES
 from player import Player
 from monster import Monster
 from item import Item
@@ -9,8 +11,14 @@ from base_api import API
 class Bank:
     def __init__(self, game):
         self.game = game
-        self.money = self.game.get_bank_gold()
+        self.money = self.game.get_bank_details()["gold"]
+        self.slots = self.game.get_bank_details()["slots"]
+        self.expansions = self.game.get_bank_details()["expansions"]
+        self.next_expansion_cost = self.game.get_bank_details()["next_expansion_cost"]
         self.items: dict[str, int] = {item["code"]: item["quantity"] for item in self.game.get_bank_items(page=0)}
+
+    def update_bank(self, **kwargs):
+        self.__dict__.update(**kwargs)
 
 
 @dataclass
@@ -25,8 +33,12 @@ class Game(API):
         self.kerry = Player(game=self, **self.get_character("Kerry"))
         self.karven = Player(game=self, **self.get_character("Karven"))
         self.warrant = Player(game=self, **self.get_character("Warrant"))
+        self.players = [self.lert, self.ralernan, self.kerry, self.karven, self.warrant]
 
     # ******* GAME ACTIONS ****** #
+
+    def update_bank(self):
+        self.bank.update_bank(**self.get_bank_details())
 
     def get_status(self):
         response = self.get("/")
@@ -63,13 +75,8 @@ class Game(API):
                 )
         return result
 
-    def bank_details(self):
+    def get_bank_details(self) -> dict | list:
         response = self.get(endpoint="/my/bank")
-        return response
-
-    def get_bank_gold(self) -> dict | list:
-        endpoint = "/my/bank"
-        response = self.get(endpoint=endpoint)
         return response
 
     def get_monster(self, code: str) -> dict:
@@ -158,6 +165,31 @@ class Game(API):
     def get_monster_coord(self, name: str) -> dict | list:
         monsters = self.get_maps(name)
         return {"x": monsters[0].get("x"), "y": monsters[0].get("y")}
+
+    def count_items_in_game(self, code: str) -> int:
+        result = 0
+        result += self.bank.items.get(code, 0)
+        for player in self.players:
+            for slot in SLOT_TYPES:
+                if eval(f"player.{slot}") == code:
+                    result += 1
+            for in_slot in player.inventory:
+                if in_slot.get("code") == code:
+                    result += in_slot.get("quantity")
+        return result
+
+    def max_skill_level(self, code) -> int:
+        craftable = self.items[code].craft
+        if craftable:
+            skill = craftable.get("skill")
+            result = []
+            for player in self.players:
+                result.append(eval(f"player.{skill}_level"))
+            return max(result)
+        return 100
+
+    def check_expired_items(self, code: str) -> bool:
+        return True if self.items[code].level < self.max_skill_level(code) - 5 else False
 
 
 if __name__ == '__main__':

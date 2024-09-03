@@ -243,16 +243,17 @@ class BasePlayer(API):
 
     @wait
     async def unequip(self, slot: str) -> dict | list:
-        response = self.post(
-            endpoint=f"/my/{self.name}/action/unequip",
-            data={"slot": slot}
-        )
-        character = response.get("character")
-        if character:
-            self.update_character(**character)
-        else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
-        return response
+        if eval(f"self.{slot}_slot"):
+            response = self.post(
+                endpoint=f"/my/{self.name}/action/unequip",
+                data={"slot": slot}
+            )
+            character = response.get("character")
+            if character:
+                self.update_character(**character)
+            else:
+                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+            return response
 
     @wait
     async def sell(self, code: str, quantity: int = 1) -> dict | list:
@@ -293,6 +294,7 @@ class BasePlayer(API):
         await self.move(4, 1)
         response = self.post(endpoint=f"/my/{self.name}/action/bank/buy_expansion")
         character = response.get("character")
+        self.game.update_bank()
         if character:
             self.update_character(**character)
         else:
@@ -307,12 +309,14 @@ class BasePlayer(API):
                 endpoint=f"/my/{self.name}/action/bank/deposit/gold",
                 data={"quantity": quantity}
             )
+            self.game.update_bank()
             character = response.get("character")
             if character:
                 self.update_character(**character)
             else:
                 print(f"NO CHARACTER IN RESPONSE ({self.name})")
             return response
+
 
     @wait
     async def withdraw_money(self, quantity: int = 1):
@@ -322,6 +326,7 @@ class BasePlayer(API):
                 endpoint=f"/my/{self.name}/action/bank/withdraw/gold",
                 data={"quantity": quantity}
             )
+            self.game.update_bank()
             character = response.get("character")
             if character:
                 self.update_character(**character)
@@ -331,13 +336,13 @@ class BasePlayer(API):
 
     @wait
     async def deposit_item(self, code: str, quantity: int = 1) -> dict | list:
-        endpoint = f"/my/{self.name}/action/bank/deposit"
-        await self.move(4, 1)
         if self.count_inventory_item(code):
+            await self.move(4, 1)
             if self.count_inventory_item(code) < quantity:
                 quantity = self.count_inventory_item(code)
+            print(f"{self.name.ljust(9)} put {quantity} {code}")
             response = self.post(
-                endpoint=endpoint,
+                endpoint=f"/my/{self.name}/action/bank/deposit",
                 data={"code": code,
                       "quantity": quantity}
             )
@@ -359,44 +364,36 @@ class BasePlayer(API):
 
     @wait
     async def withdraw_item(self, code: str, quantity: int = 1) -> dict | list:
-        endpoint = f"/my/{self.name}/action/bank/withdraw"
-        bank: list = self.game.bank.items.get(code)
-        if bank:
-            await self.wait_before_action()
-            await self.move(4, 1)
-
-            in_bank = self.game.bank.items.get(code)
-            if in_bank is None:
-                print(f"No items {code} ({self.name})")
-                return {}
-            if in_bank <= quantity:
+        bank_items = self.game.get_bank_items(code)
+        if bank_items:
+            bank: int = bank_items[0].get("quantity", 0)
+            if bank:
+                await self.wait_before_action()
+                await self.move(4, 1)
+                if bank <= quantity:
+                    quantity = bank
+                print(f"{self.name.ljust(9)} get {quantity} {code}")
                 response = self.post(
-                    endpoint=endpoint,
-                    data={"code": code,
-                          "quantity": in_bank}
-                )
-            else:
-                response = self.post(
-                    endpoint=endpoint,
+                    endpoint=f"/my/{self.name}/action/bank/withdraw",
                     data={"code": code,
                           "quantity": quantity}
                 )
-            character = response.get("character")
+                character = response.get("character")
 
-            # Decrease or remove from bank
-            if in_bank == quantity:
-                self.game.bank.items.pop(code)
-            else:
-                in_bank -= quantity
+                # Update bank parameters
+                if bank == quantity:
+                    self.game.bank.items.pop(code)
+                else:
+                    self.game.bank.items[code] = bank - quantity
 
-            if character:
-                self.update_character(**character)
-            else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
-            return response
-        else:
-            print(f"No items {code} ({self.name})")
-            return {}
+                # Update character parameters
+                if character:
+                    self.update_character(**character)
+                else:
+                    print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                return response
+        print(f"No items {code} ({self.name})")
+        return {}
 
     @wait
     async def recycling(self, code: str, quantity: int = 1) -> dict | list:
@@ -430,7 +427,7 @@ class BasePlayer(API):
                 return {}
             elif fight_result.get("drops"):
                 drops = [f'{item["quantity"]} {item["code"]}' for item in fight_result.get("drops")]
-                print(f'Won {", ".join(drops)} ({self.name})')
+                print(f'{self.name.ljust(9)} won {", ".join(drops)}')
             return response
         else:
             return {}

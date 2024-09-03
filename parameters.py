@@ -24,7 +24,8 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
     "gearcrafting": {
         0: ["wooden_shield", "copper_helmet", "copper_helmet", "wooden_shield", "copper_boots"],
         5: ["copper_armor", "copper_legs_armor", "feather_coat", "feather_coat"],
-        10: ["slime_shield", "iron_helm", "iron_armor", "iron_legs_armor", "adventurer_pants", "leather_hat", "iron_boots", "adventurer_vest"],
+        10: ["slime_shield", "iron_helm", "iron_armor", "iron_legs_armor", "adventurer_pants", "leather_hat",
+             "iron_boots", "adventurer_vest"],
         15: ["adventurer_boots", "mushmush_wizard_hat", "lucky_wizard_hat"],
         20: ["magic_wizard_hat", "steel_shield", "steel_helm", "steel_boots", "steel_armor", "steel_legs_armor"
                                                                                              "tromatising_mask",
