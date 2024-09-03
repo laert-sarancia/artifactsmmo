@@ -217,6 +217,7 @@ class BasePlayer(API):
 
     @wait
     async def crafting(self, code: str, quantity: int = 1) -> dict | list:
+        print(f"{self.name.ljust(9)} craft {quantity} {code}")
         response = self.post(
             endpoint=f"/my/{self.name}/action/crafting",
             data={"code": code, "quantity": quantity}
@@ -259,6 +260,7 @@ class BasePlayer(API):
     async def sell(self, code: str, quantity: int = 1) -> dict | list:
         await self.move(5, 1)
         price = self.game.get_item(code).get("ge").get("sell_price")
+        print(f"{self.name.ljust(9)} sell {quantity}@{price} {code}")
         response = self.post(
             endpoint=f"/my/{self.name}/action/ge/sell",
             data={"code": code,
@@ -276,6 +278,7 @@ class BasePlayer(API):
     async def buy(self, code: str, quantity: int = 1) -> dict | list:
         await self.move(5, 1)
         price = self.game.get_item(code).get("ge").get("buy_price")
+        print(f"{self.name.ljust(9)} buy {quantity}@{price} {code}")
         response = self.post(
             endpoint=f"/my/{self.name}/action/ge/buy",
             data={"code": code,
@@ -305,6 +308,7 @@ class BasePlayer(API):
     async def deposit_money(self, quantity: int = 1):
         if self.gold:
             await self.move(4, 1)
+            print(f"{self.name.ljust(9)} put {quantity} money")
             response = self.post(
                 endpoint=f"/my/{self.name}/action/bank/deposit/gold",
                 data={"quantity": quantity}
@@ -320,8 +324,9 @@ class BasePlayer(API):
 
     @wait
     async def withdraw_money(self, quantity: int = 1):
-        if self.game.bank.money["gold"]:
+        if self.game.bank.money:
             await self.move(4, 1)
+            print(f"{self.name.ljust(9)} get {quantity} money")
             response = self.post(
                 endpoint=f"/my/{self.name}/action/bank/withdraw/gold",
                 data={"quantity": quantity}
@@ -397,6 +402,7 @@ class BasePlayer(API):
 
     @wait
     async def recycling(self, code: str, quantity: int = 1) -> dict | list:
+        print(f"{self.name.ljust(9)} dis {quantity} {code}")
         response = self.post(
             endpoint=f"/my/{self.name}/action/recycling",
             data={
