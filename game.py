@@ -5,6 +5,7 @@ from player import Player
 from monster import Monster
 from item import Item
 from base_api import API
+from exchange_view import Exchange
 
 
 @dataclass
@@ -28,6 +29,7 @@ class Game(API):
         self.items: dict[str: Item] = {item["code"]: Item(**item) for item in self.get_items(page=0)}
         self.monsters: dict[str, Monster] = {mon["code"]: Monster(**mon) for mon in self.get_monsters()}
         self.bank = Bank(self)
+        self.exchange = Exchange(self)
         self.lert = Player(game=self, **self.get_character("Lert"))
         self.ralernan = Player(game=self, **self.get_character("Ralernan"))
         self.kerry = Player(game=self, **self.get_character("Kerry"))
