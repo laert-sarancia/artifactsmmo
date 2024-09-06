@@ -4,7 +4,6 @@ import logging
 import requests
 from dotenv import dotenv_values
 
-
 logging.basicConfig(
     filename=f"logs/log_{time.time()}.log",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -20,6 +19,7 @@ def time_it(func):
         logging.info(msg=f"lag: {end_time - start_time:.2f} {kwargs}")
         # print(f"lag: {end_time - start_time:.2f} {kwargs}")
         return result
+
     return wrapper
 
 

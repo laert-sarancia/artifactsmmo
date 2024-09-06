@@ -3,13 +3,13 @@ from game import Game
 
 
 async def main():
-    game = Game()
+    game = await Game()
     await asyncio.gather(
-        game.lert.main_mode(),
-        game.ralernan.work_helper_mode0(),
-        game.kerry.work_helper_mode1(),
-        game.karven.work_helper_mode2(),
-        game.warrant.work_helper_mode3(),
+        game.lert.play_role(),
+        game.ralernan.play_role(),
+        game.kerry.play_role(),
+        game.karven.play_role(),
+        game.warrant.play_role(),
     )
 
 

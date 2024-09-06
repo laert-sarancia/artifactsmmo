@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from base_api import API
+from async_api import AsyncRequester
 
 
 def wait(func):
@@ -14,8 +14,8 @@ def wait(func):
     return wrapper
 
 
-class BasePlayer(API):
-    def __init__(
+class BasePlayer(AsyncRequester):
+    async def __init__(
             self,
             game,
             name: str,
@@ -183,7 +183,8 @@ class BasePlayer(API):
         self.__dict__.update(**kwargs)
 
     async def wait_before_action(self):
-        now = datetime.strptime(self.game.get_status().get("server_time"), "%Y-%m-%dT%H:%M:%S.%fZ")
+        status = await self.game.get_status()
+        now = datetime.strptime(status.get("server_time"), "%Y-%m-%dT%H:%M:%S.%fZ")
         dt = datetime.strptime(self.cooldown_expiration, "%Y-%m-%dT%H:%M:%S.%fZ")
         cd = (dt - now).total_seconds()
         if cd > 0:
@@ -193,32 +194,33 @@ class BasePlayer(API):
     @wait
     async def move(self, x: int, y: int) -> dict | list:
         if self.x != x or self.y != y:
-            response = self.post(
+            response = await self.post(
                 endpoint=f"/my/{self.name}/action/move",
                 data={"x": x, "y": y}
             )
+            print(f"{self.name.ljust(9)} go ({x}:{y})")
             character = response.get("character")
             if character:
                 self.update_character(**character)
             else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                print(f"NO CHARACTER IN RESPONSE ({self.name}) move")
             return response
 
     @wait
     async def gathering(self) -> dict | list:
-        response = self.post(f"/my/{self.name}/action/gathering")
+        response = await self.post(f"/my/{self.name}/action/gathering")
         if response:
             character = response.get("character")
             if character:
                 self.update_character(**character)
             else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                print(f"NO CHARACTER IN RESPONSE ({self.name}) gathering")
         return response
 
     @wait
     async def crafting(self, code: str, quantity: int = 1) -> dict | list:
         print(f"{self.name.ljust(9)} craft {quantity} {code}")
-        response = self.post(
+        response = await self.post(
             endpoint=f"/my/{self.name}/action/crafting",
             data={"code": code, "quantity": quantity}
         )
@@ -226,12 +228,12 @@ class BasePlayer(API):
         if character:
             self.update_character(**character)
         else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
+            print(f"NO CHARACTER IN RESPONSE ({self.name}) crafting")
         return response
 
     @wait
     async def equip(self, code: str, slot: str, quantity: int = 1) -> dict | list:
-        response = self.post(
+        response = await self.post(
             endpoint=f"/my/{self.name}/action/equip",
             data={"code": code, "slot": slot, "quantity": quantity}
         )
@@ -239,13 +241,13 @@ class BasePlayer(API):
         if character:
             self.update_character(**character)
         else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
+            print(f"NO CHARACTER IN RESPONSE ({self.name}) equip")
         return response
 
     @wait
     async def unequip(self, slot: str) -> dict | list:
         if eval(f"self.{slot}_slot"):
-            response = self.post(
+            response = await self.post(
                 endpoint=f"/my/{self.name}/action/unequip",
                 data={"slot": slot}
             )
@@ -253,15 +255,16 @@ class BasePlayer(API):
             if character:
                 self.update_character(**character)
             else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                print(f"NO CHARACTER IN RESPONSE ({self.name}) unequip")
             return response
 
     @wait
     async def sell(self, code: str, quantity: int = 1) -> dict | list:
         await self.move(5, 1)
-        price = self.game.get_item(code).get("ge").get("sell_price")
+        item = await self.game.get_item(code)
+        price = item.get("ge").get("sell_price")
         print(f"{self.name.ljust(9)} sell {quantity}@{price} {code}")
-        response = self.post(
+        response = await self.post(
             endpoint=f"/my/{self.name}/action/ge/sell",
             data={"code": code,
                   "quantity": quantity,
@@ -271,15 +274,15 @@ class BasePlayer(API):
         if character:
             self.update_character(**character)
         else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
+            print(f"NO CHARACTER IN RESPONSE ({self.name}) sell")
         return response
 
     @wait
     async def buy(self, code: str, quantity: int = 1) -> dict | list:
         await self.move(5, 1)
-        price = self.game.get_item(code).get("ge").get("buy_price")
+        price = await self.game.get_item(code).get("ge").get("buy_price")
         print(f"{self.name.ljust(9)} buy {quantity}@{price} {code}")
-        response = self.post(
+        response = await self.post(
             endpoint=f"/my/{self.name}/action/ge/buy",
             data={"code": code,
                   "quantity": quantity,
@@ -289,19 +292,19 @@ class BasePlayer(API):
         if character:
             self.update_character(**character)
         else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
+            print(f"NO CHARACTER IN RESPONSE ({self.name}) buy")
         return response
 
     @wait
     async def buy_expansion(self):
         await self.move(4, 1)
-        response = self.post(endpoint=f"/my/{self.name}/action/bank/buy_expansion")
+        response = await self.post(endpoint=f"/my/{self.name}/action/bank/buy_expansion")
         character = response.get("character")
-        self.game.update_bank()
+        await self.game.update_bank()
         if character:
             self.update_character(**character)
         else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
+            print(f"NO CHARACTER IN RESPONSE ({self.name}) buy_expansion")
         return response
 
     @wait
@@ -309,34 +312,33 @@ class BasePlayer(API):
         if self.gold:
             await self.move(4, 1)
             print(f"{self.name.ljust(9)} put {quantity} money")
-            response = self.post(
+            response = await self.post(
                 endpoint=f"/my/{self.name}/action/bank/deposit/gold",
                 data={"quantity": quantity}
             )
-            self.game.update_bank()
+            await self.game.update_bank()
             character = response.get("character")
             if character:
                 self.update_character(**character)
             else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                print(f"NO CHARACTER IN RESPONSE ({self.name}) deposit_money")
             return response
-
 
     @wait
     async def withdraw_money(self, quantity: int = 1):
         if self.game.bank.money:
             await self.move(4, 1)
             print(f"{self.name.ljust(9)} get {quantity} money")
-            response = self.post(
+            response = await self.post(
                 endpoint=f"/my/{self.name}/action/bank/withdraw/gold",
                 data={"quantity": quantity}
             )
-            self.game.update_bank()
+            await self.game.update_bank()
             character = response.get("character")
             if character:
                 self.update_character(**character)
             else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                print(f"NO CHARACTER IN RESPONSE ({self.name}) withdraw_money")
             return response
 
     @wait
@@ -346,7 +348,7 @@ class BasePlayer(API):
             if self.count_inventory_item(code) < quantity:
                 quantity = self.count_inventory_item(code)
             print(f"{self.name.ljust(9)} put {quantity} {code}")
-            response = self.post(
+            response = await self.post(
                 endpoint=f"/my/{self.name}/action/bank/deposit",
                 data={"code": code,
                       "quantity": quantity}
@@ -363,13 +365,12 @@ class BasePlayer(API):
             if character:
                 self.update_character(**character)
             else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                print(f"NO CHARACTER IN RESPONSE ({self.name}) deposit_item")
             return response
-
 
     @wait
     async def withdraw_item(self, code: str, quantity: int = 1) -> dict | list:
-        bank_items = self.game.get_bank_items(code)
+        bank_items = await self.game.get_bank_items(code)
         if bank_items:
             bank: int = bank_items[0].get("quantity", 0)
             if bank:
@@ -378,7 +379,7 @@ class BasePlayer(API):
                 if bank <= quantity:
                     quantity = bank
                 print(f"{self.name.ljust(9)} get {quantity} {code}")
-                response = self.post(
+                response = await self.post(
                     endpoint=f"/my/{self.name}/action/bank/withdraw",
                     data={"code": code,
                           "quantity": quantity}
@@ -395,7 +396,7 @@ class BasePlayer(API):
                 if character:
                     self.update_character(**character)
                 else:
-                    print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                    print(f"NO CHARACTER IN RESPONSE ({self.name}) withdraw_item")
                 return response
         print(f"No items {code} ({self.name})")
         return {}
@@ -403,7 +404,7 @@ class BasePlayer(API):
     @wait
     async def recycling(self, code: str, quantity: int = 1) -> dict | list:
         print(f"{self.name.ljust(9)} dis {quantity} {code}")
-        response = self.post(
+        response = await self.post(
             endpoint=f"/my/{self.name}/action/recycling",
             data={
                 "code": code,
@@ -414,18 +415,18 @@ class BasePlayer(API):
         if character:
             self.update_character(**character)
         else:
-            print(f"NO CHARACTER IN RESPONSE ({self.name})")
+            print(f"NO CHARACTER IN RESPONSE ({self.name}) recycling")
         return response
 
     @wait
     async def fight(self) -> dict | list:
-        response = self.post(endpoint=f"/my/{self.name}/action/fight")
+        response = await self.post(endpoint=f"/my/{self.name}/action/fight")
         if response:
             character = response.get("character")
             if character:
                 self.update_character(**character)
             else:
-                print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                print(f"NO CHARACTER IN RESPONSE ({self.name}) fight")
                 return {}
             fight_result = response.get("fight")
             if fight_result.get("result") == "lose":
@@ -441,13 +442,13 @@ class BasePlayer(API):
     @wait
     async def new_task(self) -> dict | list:
         await self.move(1, 2)
-        response = self.post(endpoint=f"/my/{self.name}/action/task/new")
+        response = await self.post(endpoint=f"/my/{self.name}/action/task/new")
         return response
 
     @wait
     async def complete_task(self) -> dict | list:
         await self.move(1, 2)
-        response = self.post(endpoint=f"/my/{self.name}/action/task/complete")
+        response = await self.post(endpoint=f"/my/{self.name}/action/task/complete")
         return response
 
     @wait
@@ -455,12 +456,12 @@ class BasePlayer(API):
         await self.move(1, 2)
         if self.check_item_on("tasks_coin"):
             if self.count_inventory_item("tasks_coin") > 2:
-                response = self.post(endpoint=f"/my/{self.name}/action/task/exchange")
+                response = await self.post(endpoint=f"/my/{self.name}/action/task/exchange")
                 character = response.get("character")
                 if character:
                     self.update_character(**character)
                 else:
-                    print(f"NO CHARACTER IN RESPONSE ({self.name})")
+                    print(f"NO CHARACTER IN RESPONSE ({self.name}) task_exchange")
                 return response
 
     def get_slot_of_equip(self, code: str) -> str:

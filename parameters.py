@@ -1,3 +1,9 @@
+ROLES = {
+    "Lert": ("weaponcrafting", "gearcrafting"),
+    "Ralernan": ("jewelrycrafting", "trader"),
+    "Kerry": ("mining", "mining"),
+    "Karven": ("woodcutting", "woodcutting"),
+    "Warrant": ("cooking", "cooking")}
 ELEMENTS = ["fire", "earth", "water", "air"]
 CRAFT_ITEMS: dict[str, dict[int, list]] = {
     "cooking": {
