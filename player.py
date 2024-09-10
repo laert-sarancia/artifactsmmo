@@ -514,22 +514,35 @@ class Player(BasePlayer):
                     qty //= 2
                 if qty > 5:
                     last = qty - 5
+                    item_components = self.game.items[code].craft
                     if bank_qty <= last:
+                        if item_components:
+                            if "jasper_crystal" in [item["code"] for item in item_components["items"]]:
+                                await self.recycling(code, bank_qty)
                         await self.withdraw_item(code, bank_qty)
                         await self.sell(code, bank_qty)
                     else:
+                        if item_components:
+                            if "jasper_crystal" in [item["code"] for item in item_components["items"]]:
+                                await self.recycling(code, last)
                         await self.withdraw_item(code, last)
                         await self.sell(code, last)
 
     async def play_role(self):
         prime_role, second_role = ROLES[self.name]
+
         if not self.task:
             await self.new_task()
         while True:
+            await self.do_task()
+            await self.drop_all()
+            await self.do_exchange()
             if "trader" in ROLES[self.name]:
-                if self.game.bank.get_bank_details()
-                await self.sell_extra_items()
-                # await self.recycle_all()   # Sell or Recycle
+                details = await self.game.bank.get_bank_details()
+                if details.get("slots") < 100:
+                    await self.sell_extra_items()
+                else:
+                    await self.recycle_all()   # Sell or Recycle
                 # await self.do_trade()
                 await self.extend_bank()
                 second_role = prime_role
@@ -541,9 +554,6 @@ class Player(BasePlayer):
             else:
                 level = prime_level
                 role = prime_role
-            await self.do_task()
-            await self.drop_all()
-            await self.do_exchange()
             level = level - (level % 5)
             items = CRAFT_ITEMS[role][level]
             for item in items:

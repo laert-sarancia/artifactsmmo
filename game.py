@@ -225,7 +225,14 @@ class Game(AsyncRequester):
         return 100
 
     def check_expired_items(self, code: str) -> bool:
-        return True if self.items[code].level < self.max_skill_level(code) - 5 else False
+        if self.items[code].level < self.max_skill_level(code) - 5:
+            item_components = self.items[code].craft
+            if item_components:
+                if not "jasper_crystal" in [item["code"] for item in item_components["items"]]:
+                    return True
+            else:
+                return True
+        return False
 
 
 if __name__ == '__main__':
