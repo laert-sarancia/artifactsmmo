@@ -209,6 +209,7 @@ class BasePlayer(AsyncRequester):
     @wait
     async def gathering(self) -> dict | list:
         response = await self.post(f"/my/{self.name}/action/gathering")
+        print(f'{self.name.ljust(9)} : {response.get("details")}')
         if response:
             character = response.get("character")
             if character:
@@ -224,6 +225,7 @@ class BasePlayer(AsyncRequester):
             endpoint=f"/my/{self.name}/action/crafting",
             data={"code": code, "quantity": quantity}
         )
+        print(f'{self.name.ljust(9)} : {response.get("details")}')
         character = response.get("character")
         if character:
             self.update_character(**character)
@@ -259,8 +261,13 @@ class BasePlayer(AsyncRequester):
             return response
 
     @wait
+    async def move_to_ge(self):
+        coords = await self.game.get_coord("grand_exchange")
+        await self.move(**coords)
+
+    @wait
     async def sell(self, code: str, quantity: int = 1) -> dict | list:
-        await self.move(5, 1)
+        await self.move_to_ge()
         item = await self.game.get_item(code)
         price = item.get("ge").get("sell_price")
         print(f"{self.name.ljust(9)} sell {quantity}@{price} {code}")
@@ -279,7 +286,7 @@ class BasePlayer(AsyncRequester):
 
     @wait
     async def buy(self, code: str, quantity: int = 1) -> dict | list:
-        await self.move(5, 1)
+        await self.move_to_ge()
         price = await self.game.get_item(code).get("ge").get("buy_price")
         print(f"{self.name.ljust(9)} buy {quantity}@{price} {code}")
         response = await self.post(
@@ -296,8 +303,13 @@ class BasePlayer(AsyncRequester):
         return response
 
     @wait
+    async def move_to_bank(self):
+        coords = await self.game.get_coord("bank")
+        await self.move(**coords)
+
+    @wait
     async def buy_expansion(self):
-        await self.move(4, 1)
+        await self.move_to_bank()
         response = await self.post(endpoint=f"/my/{self.name}/action/bank/buy_expansion")
         character = response.get("character")
         await self.game.update_bank()
@@ -310,7 +322,7 @@ class BasePlayer(AsyncRequester):
     @wait
     async def deposit_money(self, quantity: int = 1):
         if self.gold:
-            await self.move(4, 1)
+            await self.move_to_bank()
             print(f"{self.name.ljust(9)} put {quantity} money")
             response = await self.post(
                 endpoint=f"/my/{self.name}/action/bank/deposit/gold",
@@ -327,7 +339,7 @@ class BasePlayer(AsyncRequester):
     @wait
     async def withdraw_money(self, quantity: int = 1):
         if self.game.bank.money:
-            await self.move(4, 1)
+            await self.move_to_bank()
             print(f"{self.name.ljust(9)} get {quantity} money")
             response = await self.post(
                 endpoint=f"/my/{self.name}/action/bank/withdraw/gold",
@@ -344,7 +356,7 @@ class BasePlayer(AsyncRequester):
     @wait
     async def deposit_item(self, code: str, quantity: int = 1) -> dict | list:
         if self.count_inventory_item(code):
-            await self.move(4, 1)
+            await self.move_to_bank()
             if self.count_inventory_item(code) < quantity:
                 quantity = self.count_inventory_item(code)
             print(f"{self.name.ljust(9)} put {quantity} {code}")
@@ -375,7 +387,7 @@ class BasePlayer(AsyncRequester):
             bank: int = bank_items[0].get("quantity", 0)
             if bank:
                 await self.wait_before_action()
-                await self.move(4, 1)
+                await self.move_to_bank()
                 if bank <= quantity:
                     quantity = bank
                 print(f"{self.name.ljust(9)} get {quantity} {code}")
@@ -435,25 +447,31 @@ class BasePlayer(AsyncRequester):
             elif fight_result.get("drops"):
                 drops = [f'{item["quantity"]} {item["code"]}' for item in fight_result.get("drops")]
                 print(f'{self.name.ljust(9)} won {", ".join(drops)}')
+            print(f'{self.name.ljust(9)} : {response.get("details")}')
             return response
         else:
             return {}
 
     @wait
+    async def move_to_task(self):
+        coords = await self.game.get_coord("monsters")
+        await self.move(**coords)
+
+    @wait
     async def new_task(self) -> dict | list:
-        await self.move(1, 2)
+        await self.move_to_task()
         response = await self.post(endpoint=f"/my/{self.name}/action/task/new")
         return response
 
     @wait
     async def complete_task(self) -> dict | list:
-        await self.move(1, 2)
+        await self.move_to_task()
         response = await self.post(endpoint=f"/my/{self.name}/action/task/complete")
         return response
 
     @wait
     async def task_exchange(self) -> dict | list:
-        await self.move(1, 2)
+        await self.move_to_task()
         if self.check_item_on("tasks_coin"):
             if self.count_inventory_item("tasks_coin") > 2:
                 response = await self.post(endpoint=f"/my/{self.name}/action/task/exchange")

@@ -145,7 +145,7 @@ class Game(AsyncRequester):
     async def get_items(
             self,
             craft_skill: str="",
-            max_level: int = 30,
+            max_level: int = 100,
             min_lvl: int = 0,
             item_type: str="",
             page: int = 1
@@ -198,9 +198,12 @@ class Game(AsyncRequester):
         response = await self.get(endpoint=f"/maps/{x}/{y}")
         return response
 
-    async def get_monster_coord(self, name: str) -> dict | list:
-        monsters = await self.get_maps(name)
-        return {"x": monsters[0].get("x"), "y": monsters[0].get("y")}
+    async def get_coord(self, code: str) -> dict | list:
+        object_coords = await self.get_maps(code)
+        if object_coords:
+            return {"x": object_coords[0].get("x"), "y": object_coords[0].get("y")}
+        else:
+            return {}
 
     def count_items_in_game(self, code: str) -> int:
         result = 0

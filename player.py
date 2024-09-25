@@ -193,11 +193,15 @@ class Player(BasePlayer):
 
     async def gathering_items(self, code: str, quantity: int = 1):
         await self.take_best_tool(code)
-        await self.move(*COORDINATES[code])
-        while not self.check_item_on(code):
-            await self.gathering()
-        while self.count_inventory_item(code) < quantity:
-            await self.gathering()
+        coords = await self.game.get_coord(COORDINATES[code])
+        if coords:
+            await self.move(**coords)
+            while not self.check_item_on(code):
+                await self.gathering()
+            while self.count_inventory_item(code) < quantity:
+                await self.gathering()
+        else:
+            print(f"No place to gather {code}")
 
     async def craft_item_scenario(self, code: str, quantity: int = 1):
         if self.count_inventory_item(code) < quantity:
@@ -258,7 +262,8 @@ class Player(BasePlayer):
         return items
 
     async def move_to_craft(self, skill):
-        await self.move(*COORDINATES[skill])
+        coord = await self.game.get_coord(skill)
+        await self.move(**coord)
 
     async def task_circle(self):
         await self.complete_task()
@@ -371,12 +376,16 @@ class Player(BasePlayer):
     async def kill_monster(self, monster: str, quantity: int = 1):
         if await self.is_win(monster):
             await self.wait_before_action()
-            coord = await self.game.get_monster_coord(monster)
-            await self.move(**coord)
-            for i in range(quantity):
-                result = await self.fight()
-                if result == {}:
-                    return 500
+            coord = await self.game.get_coord(monster)
+            if coord:
+                await self.move(**coord)
+                for i in range(quantity):
+                    result = await self.fight()
+                    if result == {}:
+                        return 500
+            else:
+                print(f"No monster {monster} on the map")
+                return 404
         else:
             print(f"Too hard monster {monster} ({self.name})")
             return 500
