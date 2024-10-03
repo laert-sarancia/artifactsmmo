@@ -1,4 +1,5 @@
 import time
+from random import choice
 from dataclasses import dataclass
 from parameters import CRAFT_ITEMS, SLOT_TYPES, COORDINATES, ELEMENTS, CRAFTABLE, ROLES
 from base_player import BasePlayer
@@ -267,7 +268,9 @@ class Player(BasePlayer):
 
     async def task_circle(self):
         await self.complete_task()
-        await self.new_task()
+        tasks = ["monsters", "items", "items", "items", "items", "items"]
+        master = choice(tasks)
+        await self.new_task(master)
 
     async def change_items(self, code: str):
         item_type = self.game.items[code].i_type
@@ -426,6 +429,18 @@ class Player(BasePlayer):
                 return 500
             else:
                 await self.task_circle()
+        elif self.task_type == "items":
+            item = self.task
+            result = await self.craft_item_scenario(
+                item,
+                self.task_total - self.task_progress)
+            if self.count_inventory_item(item) == self.task_total - self.task_progress:
+                await self.do_task_trade(item, self.task_total - self.task_progress)
+            if result == 500:
+                return 500
+            else:
+                await self.task_circle()
+
 
     async def drop_all(self):
         inventory = self.inventory

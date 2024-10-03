@@ -444,34 +444,51 @@ class BasePlayer(AsyncRequester):
             if fight_result.get("result") == "lose":
                 print(f"Monster too strong for {self.name}")
                 return {}
-            elif fight_result.get("drops"):
-                drops = [f'{item["quantity"]} {item["code"]}' for item in fight_result.get("drops")]
-                print(f'{self.name.ljust(9)} won {", ".join(drops)}')
-            print(f'{self.name.ljust(9)} : {response.get("details")}')
+            # elif fight_result.get("drops"):
+            #     drops = [f'{item["quantity"]} {item["code"]}' for item in fight_result.get("drops")]
+            #     print(f'{self.name.ljust(9)} won {", ".join(drops)}')
+            print(f'{self.name.ljust(9)} : {fight_result}')
             return response
         else:
             return {}
 
     @wait
-    async def move_to_task(self):
-        coords = await self.game.get_coord("monsters")
+    async def move_to_task(self, master = "items"):
+        coords = await self.game.get_coord(master)
         await self.move(**coords)
 
     @wait
-    async def new_task(self) -> dict | list:
-        await self.move_to_task()
+    async def new_task(self, master = "items") -> dict | list:
+        await self.move_to_task(master)
         response = await self.post(endpoint=f"/my/{self.name}/action/task/new")
         return response
 
     @wait
     async def complete_task(self) -> dict | list:
-        await self.move_to_task()
+        await self.move_to_task(self.task_type)
         response = await self.post(endpoint=f"/my/{self.name}/action/task/complete")
         return response
 
     @wait
-    async def task_exchange(self) -> dict | list:
-        await self.move_to_task()
+    async def do_task_trade(self, code: str, quantity: int=1) -> dict | list:
+        await self.move_to_task(self.task_type)
+        response = await self.post(
+            endpoint=f"/my/{self.name}/action/task/trade",
+            data={
+                "code": code,
+                "quantity": quantity
+            }
+        )
+        character = response.get("character")
+        if character:
+            self.update_character(**character)
+        else:
+            print(f"NO CHARACTER IN RESPONSE ({self.name}) recycling")
+        return response
+
+    @wait
+    async def task_exchange(self, master = "monsters") -> dict | list:
+        await self.move_to_task(master)
         if self.check_item_on("tasks_coin"):
             if self.count_inventory_item("tasks_coin") > 2:
                 response = await self.post(endpoint=f"/my/{self.name}/action/task/exchange")

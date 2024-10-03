@@ -56,10 +56,14 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
         15: ["life_ring", "air_ring", "earth_ring", "fire_ring", "water_ring"],
         20: ["steel_ring", "steel_ring", "steel_ring", "steel_ring", "steel_ring",
              "dreadful_amulet", "skull_amulet", "dreadful_amulet", "skull_amulet", "dreadful_ring", "skull_ring"],
-        25: ["ruby_amulet", "topaz_amulet", "sapphire_amulet", "emerald_amulet"],
+        25: ["steel_ring", "skull_amulet", "dreadful_amulet",
+             # "ruby_amulet", "topaz_amulet", "sapphire_amulet", "emerald_amulet"
+             ],
         30: ["gold_ring", "gold_ring", "gold_ring", "gold_ring", "gold_ring",
-             "ruby_ring", "topaz_ring", "sapphire_ring", "emerald_ring"],
+             # "ruby_ring", "topaz_ring", "sapphire_ring", "emerald_ring"
+             ],
         35: ["gold_ring", "diamond_amulet", "magic_stone_amulet", "greater_dreadful_amulet"],
+        40: ["gold_ring", "diamond_amulet", "magic_stone_amulet", "greater_dreadful_amulet"],
     },
     "mining": {
         0: ["copper"],
@@ -70,6 +74,7 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
         25: ["iron", "iron", "steel"],
         30: ["gold"],
         35: ["strangold", "steel", "gold_ore"],
+        40: ["strangold", "steel", "gold_ore"],
     },
     "woodcutting": {
         0: ["ash_plank"],
@@ -80,6 +85,7 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
         25: ["hardwood_plank", ],
         30: ["dead_wood_plank", ],
         35: ["magical_plank", "dead_wood_plank", "magical_plank", "hardwood_plank", ],
+        40: ["magical_plank", "dead_wood_plank", "magical_plank", "hardwood_plank", ],
     },
 }
 ROLES = {
