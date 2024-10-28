@@ -67,7 +67,7 @@ class AsyncRequester(AObject):
                     resp_data = {}
                 elif response.status >= 500:
                     await asyncio.sleep(60)
-                    resp_data = await self.post(endpoint, data, params)
+                    resp_data = await self.get(endpoint, data, params)
                 return resp_data
 
     @time_it
@@ -107,8 +107,10 @@ class AsyncRequester(AObject):
                 await asyncio.sleep(cd)
                 await self.post(endpoint, data, params)
             elif response.status >= 500:
+                if response.status == 598:
+                    return 598
                 await asyncio.sleep(60)
-                await self.post(endpoint, data, params)
+                resp_data = await self.post(endpoint, data, params)
             return resp_data
 
 

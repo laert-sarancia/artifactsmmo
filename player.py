@@ -204,7 +204,14 @@ class Player(BasePlayer):
         else:
             print(f"No place to gather {code}")
 
-    async def craft_item_scenario(self, code: str, quantity: int = 1):
+    async def craft_item_scenario(self, code: str, quantity: int = 1, task: bool=False):
+        if task:
+            if code in self.game.bank.items:
+                bank = self.game.bank.items.get(code)
+                if bank < quantity:
+                    quantity -= bank
+                await self.withdraw_item(code, quantity)
+
         if self.count_inventory_item(code) < quantity:
             craft = self.game.items[code].craft
             if craft:
@@ -235,7 +242,9 @@ class Player(BasePlayer):
                 if self.game.items[code].subtype in ["woodcutting", "fishing", "mining"]:
                     if eval(f"self.{self.game.items[code].subtype}_level") < self.game.items[code].level:
                         return 500
-                    await self.gathering_items(code, quantity)
+                    result = await self.gathering_items(code, quantity)
+                    if result == 497:
+                        return 497
                 else:
                     monsters = await self.game.get_monsters(drop=code)
                     if monsters:
@@ -371,8 +380,8 @@ class Player(BasePlayer):
             if best[1]:
                 if eval(f"self.{slot_type}") != best[1]:
                     if self.count_inventory_item(best[1]):
-                        await self.unequip(item_type)
-                        await self.equip(best[1], item_type)
+                        await self.unequip(slot_type.replace("_slot", ""))
+                        await self.equip(best[1], slot_type.replace("_slot", ""))
                     else:
                         await self.change_items(best[1])
 
@@ -427,17 +436,22 @@ class Player(BasePlayer):
                 self.task_total - self.task_progress)
             if result == 500:
                 return 500
+            elif result == 497:
+                return 497
             else:
                 await self.task_circle()
         elif self.task_type == "items":
             item = self.task
             result = await self.craft_item_scenario(
-                item,
-                self.task_total - self.task_progress)
+                code=item,
+                quantity=self.task_total - self.task_progress,
+                task=True)
             if self.count_inventory_item(item) == self.task_total - self.task_progress:
                 await self.do_task_trade(item, self.task_total - self.task_progress)
             if result == 500:
                 return 500
+            elif result == 497:
+                return 497
             else:
                 await self.task_circle()
 
@@ -558,9 +572,12 @@ class Player(BasePlayer):
         if not self.task:
             await self.new_task()
         while True:
-            await self.do_task()
             await self.drop_all()
-            await self.do_exchange()
+            task = await self.do_task()
+            if task == 497:
+                await self.drop_all()
+                await self.do_task()
+            # await self.do_exchange()
             if "trader" in ROLES[self.name]:
                 details = await self.game.bank.get_bank_details()
                 if details.get("slots") < 100:

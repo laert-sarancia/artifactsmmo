@@ -4,11 +4,11 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
         5: ["cooked_gudgeon", ],
         10: ["cooked_shrimp", "cheese", "beef_stew", "mushroom_soup", "fried_eggs", ],
         15: ["cooked_shrimp", "cooked_wolf_meat", "fried_eggs", ],
-        20: ["cooked_trout", "cheese", "cooked_wolf_meat", ],
-        25: ["cooked_trout", "cheese", "cooked_wolf_meat", ],
-        30: ["cooked_trout", "mushroom_soup", "beef_stew", ],
-        35: ["cooked_trout", "mushroom_soup", "beef_stew", ],
-        40: ["cooked_salmon", "mushroom_soup", "beef_stew", "cheese", "cooked_wolf_meat", ],
+        20: ["cooked_trout", "cheese", "cooked_wolf_meat", "pumpkin_pie", ],
+        25: ["pumpkin_pie", "cooked_trout", "cheese", "cooked_wolf_meat", "pumpkin_pie", ],
+        30: ["pumpkin_pie", "cooked_trout", "mushroom_soup", "beef_stew", "pumpkin_pie", ],
+        35: ["pumpkin_pie", "cooked_trout", "mushroom_soup", "beef_stew", "pumpkin_pie", ],
+        40: ["pumpkin_pie", "cooked_salmon", "mushroom_soup", "beef_stew", "cheese", "cooked_wolf_meat", ],
     },
     "weaponcrafting": {
         0: ["copper_dagger", ],
@@ -73,8 +73,10 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
         20: ["iron", "iron", "steel"],
         25: ["iron", "iron", "steel"],
         30: ["gold"],
-        35: ["strangold", "steel", "gold_ore"],
-        40: ["strangold", "steel", "gold_ore"],
+        35: ["strangold", "iron_ore", "iron_ore", "iron_ore", "coal", "strangold",
+             "strangold", "iron_ore", "iron_ore", "iron_ore", "coal", "gold_ore", ],
+        40: ["strangold", "iron_ore", "iron_ore", "iron_ore", "coal", "gold_ore",
+             "strangold", "iron_ore", "iron_ore", "iron_ore", "coal", "gold_ore", ],
     },
     "woodcutting": {
         0: ["ash_plank"],
@@ -85,7 +87,7 @@ CRAFT_ITEMS: dict[str, dict[int, list]] = {
         25: ["hardwood_plank", ],
         30: ["dead_wood_plank", ],
         35: ["magical_plank", "dead_wood_plank", "magical_plank", "hardwood_plank", ],
-        40: ["magical_plank", "dead_wood_plank", "magical_plank", "hardwood_plank", ],
+        40: ["magic_wood", "magic_wood", "magical_plank", "hardwood_plank", ],
     },
 }
 ROLES = {
